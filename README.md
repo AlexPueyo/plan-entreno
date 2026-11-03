@@ -30,15 +30,20 @@ Los textos `Estimación` y `Pendiente` se dejan tal cual cuando el dato todavía
 | Zona de la app | Dónde está en el JSON |
 | --- | --- |
 | Cabecera (semana y fase) | `week.label`, `phase` |
-| Hoy: entreno, agenda, comidas, donut | `days[]`, `menus` |
+| Inicio: resumen, anillo, alerta | se calcula de `days[].sessions`, `menus`, `week.alerta`, `athlete.metrics` |
+| Hoy: bloques, ejercicios, comidas | `days[]`, `menus` |
 | Semana: calendario y tarjetas | `events`, `days[]`, `distribution.byDay` |
 | Progreso: atleta, CTL/ATL/TSB, objetivos, horas, marcas | `athlete`, `load`, `goals`, `weeklyHours`, `distribution`, `records` |
 | Nutrición y suplementos | `nutrition`, `menus` |
-| Notas: fase, riesgos, próximos pasos | `phase`, `week.summary`, `risks`, `nextSteps` |
+| Notas: fase, zonas, riesgos, próximos pasos | `phase`, `zonas`, `week.summary`, `risks`, `nextSteps` |
 
 `Hoy` elige el día cuya `date` coincide con el día del teléfono. Si hoy no cae dentro de `week.start`–`week.end`, abre el lunes. El marcador `hoy` de las gráficas de carga hace lo mismo sobre `load.points`: si la fecha de hoy está en la serie, el marcador se coloca ahí; si no, usa `load.hoyIndex`.
 
-## Esquema (`schemaVersion`: 1)
+Las casillas de los ejercicios se guardan en el navegador (`localStorage`, clave `plan-alex-checks`). No van en el JSON.
+
+El anillo de Inicio suma las sesiones con `cuentaEnPlan: true`. `completado: true` cuenta como hecho. El descanso del viernes no entra en el anillo.
+
+## Esquema (`schemaVersion`: 2)
 
 Paleta de los objetivos, en este orden (índice `goals[].color`):
 
@@ -52,6 +57,8 @@ Paleta de los objetivos, en este orden (índice `goals[].color`):
 - `calendarStartHour`, `calendarEndHour`: horas enteras del calendario (en esta semana, 6 y 23).
 - `calendarCaption`: nota bajo el calendario.
 - `referenceToday`, `referenceNowHour`: día y hora (decimal, 14.2 = 14:12) del momento en que se armó el plan. La app dibuja la hora real del teléfono; estos dos campos conservan la referencia original.
+- `alerta`: frase corta de Inicio.
+- `piscinaM`: largo de la piscina en metros (20). Un largo = `piscinaM`.
 
 ### `phase`
 
@@ -157,7 +164,23 @@ Siete objetos, de lunes a domingo:
 - `work`, `classes`, `focus`.
 - `menu`: clave de `menus`.
 - `note`: opcional.
-- `sessions[]`: `{ tag, title, detail, done? }`. `tag` es `Hecho`, `Z2`, `Drills`, `Gym`, `Swim` o `Descanso`. `done: true` solo si la sesión ya está hecha.
+- `llevar`: opcional, material compartido por las sesiones del día cuando ninguna trae el suyo.
+- `sessions[]`: cada sesión es un objeto con:
+  - `id`, `deporte` (`bici`, `carrera`, `natacion`, `fuerza`, `descanso`), `tag`, `title`.
+  - `hora`: `HH:MM` o `null` si el plan no fija la hora.
+  - `completado`, `opcional`, `cuentaEnPlan`.
+  - `duracionMin` (número o `null`) y `duracion` (texto, `1:25`, `35'`, `15' + sauna 10–15'`).
+  - `distancia`, `metros`, `largos`: totales de la sesión. En natación, `metros` es la suma de `bloques[].metros` y `largos` es `metros / piscinaM`.
+  - `objetivo`: texto corto para Inicio (`Z2 135–150`).
+  - `nota`, `llevar` (lista), `nutricion_durante` (texto o `null`).
+  - `bloques[]`, en orden: `{ nombre, duracion, duracionMin, distancia, metros, largos, descanso, intensidad, descripcion, fase? }`. `intensidad` es `{ zona, fc, texto }` o `null`. `fase: "despues"` pinta el bloque debajo de los ejercicios (la vuelta a la calma del gym).
+  - `ejercicios[]`: grupos `{ grupo, items }`. Cada ítem es `{ id, nombre, series, reps, descanso, rir, notas }`. `A1`+`A2` es una superserie. `reps` puede ser `10`, `30"`, `10/brazo` o `8/pierna`.
+
+Las horas de `distribution`, `weeklyHours` (columna de esta semana) y los objetivos «Horas», «Natación» y «Carrera» de esta semana salen de estas sesiones: se suman los `duracionMin` con `cuentaEnPlan`, y los metros de natación. El miércoles está contado en 40' porque los tramos (8'+3'+20'+4'+5') suman 40.
+
+### `zonas`
+
+`{ fcMax, nota, tabla: [{ zona, fc }] }`. La tabla provisional (FCmáx ~190) vive aquí y se pinta en Notas.
 
 ### `events[]`
 
@@ -172,7 +195,9 @@ Bloques del calendario. `{ date, start, end, title, free?, flag? }`. `start` y `
 
 Todo usa rutas relativas (`./data/semana-actual.json`, `manifest.json`) para funcionar en `https://alexpueyo.github.io/plan-entreno/`.
 
-`manifest.json` se llama **Plan de Alex**, con `theme_color` `#0c0e12`, iconos 192 y 512 (normal y maskable) y `display: standalone`. `sw.js` precarga la app en el primer acceso. Si cambias HTML, CSS o JS y quieres soltar copias viejas, sube `CACHE` en `sw.js` (`plan-alex-v1`, `v2`…).
+`manifest.json` se llama **Plan de Alex**, con `theme_color` `#f6f5f3` (claro por defecto), iconos 192 y 512 (normal y maskable) y `display: standalone`. El tema oscuro sigue a `prefers-color-scheme`. `sw.js` precarga la app en el primer acceso. Si cambias HTML, CSS o JS y quieres soltar copias viejas, sube `CACHE` en `sw.js` (`plan-alex-v3`, `v4`…).
+
+Colores: acento `#FC4C02`. Los deportes solo van en un punto: bici `#2D7FF9`, carrera `#FC4C02`, natación `#14B8A6`, fuerza `#A855F7`.
 
 Iconos: `node` no hace falta para regenerarlos; el script es `scripts/make-icons.py` (Pillow).
 

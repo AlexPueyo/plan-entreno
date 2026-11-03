@@ -4,7 +4,7 @@
    instead of sticking to a stale cache. If the network fails, the
    precached copy is used. */
 
-const CACHE = "plan-alex-v2";
+const CACHE = "plan-alex-v3";
 
 const PRECACHE = [
   "./",

@@ -1,48 +1,43 @@
-/* Plan de Alex
-   The screen only reads data/semana-actual.json. Weekly edits belong in that file. */
+/* Plan de Alex. The screen only reads data/semana-actual.json. */
 
-const state = {
-  data: null,
-  tab: "hoy",
-  dayId: null,
-};
+const state = { data: null, tab: "inicio", dayId: null };
+const CHECKS = "plan-alex-checks";
 
 const TABS = [
+  { id: "inicio", label: "Inicio", icon: "inicio" },
   { id: "hoy", label: "Hoy", icon: "hoy" },
   { id: "semana", label: "Semana", icon: "semana" },
   { id: "progreso", label: "Progreso", icon: "progreso" },
-  { id: "nutricion", label: "Nutrición", sub: "y suplementos", aria: "Nutrición y suplementos", icon: "nutricion" },
+  { id: "nutricion", label: "Nutrición", aria: "Nutrición y suplementos", icon: "nutricion" },
   { id: "notas", label: "Notas", icon: "notas" },
 ];
 
-const SPORT = {
-  Bici: "#FC4C02",
-  Carrera: "#2D7FF9",
-  Natación: "#14B8A6",
-  Fuerza: "#A855F7",
+const SPORT_COLOR = {
+  Bici: "var(--bici)",
+  Carrera: "var(--carrera)",
+  Natación: "var(--natacion)",
+  Fuerza: "var(--fuerza)",
 };
 
-const TAG = {
-  Hecho: "#3dd68c",
-  Z2: "#2D7FF9",
-  Drills: "#14B8A6",
-  Gym: "#A855F7",
-  Swim: "#14B8A6",
-  Descanso: "#94a3b8",
+const SPORT_LABEL = {
+  bici: "Bici",
+  carrera: "Carrera",
+  natacion: "Natación",
+  fuerza: "Fuerza",
+  descanso: "Descanso",
 };
 
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[ch]));
 }
 
 function num(value) {
-  return Number(value).toLocaleString("es-ES", { maximumFractionDigits: 2 });
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "";
+  const sign = n < 0 ? "-" : "";
+  return sign + String(Math.abs(Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 function localISO(date = new Date()) {
@@ -60,23 +55,58 @@ function shortDate(iso) {
 
 function longDate(iso) {
   const formatted = new Intl.DateTimeFormat("es-ES", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
+    weekday: "long", day: "numeric", month: "long",
   }).format(new Date(`${iso}T12:00:00`));
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
+function clock(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}:${String(m).padStart(2, "0")}`;
+}
+
+function parseClock(value) {
+  if (!value || !/^\d{1,2}:\d{2}$/.test(value)) return null;
+  const [h, m] = value.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function nowMinutes() {
+  const date = new Date();
+  return date.getHours() * 60 + date.getMinutes();
+}
+
 function icon(name) {
-  const attrs = 'viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+  const attrs = 'viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
   const paths = {
-    hoy: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3.5V6M16 3.5V6M12 13v3.5M10.2 14.8h3.6"/>',
-    semana: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 13h2M12 13h2M16 13h2M8 17h2M12 17h2"/>',
-    progreso: '<path d="M4 16.5 8.2 12l3.1 3.1L20 6.5"/><path d="M15 6.5h5V11"/>',
-    nutricion: '<path d="M12 20.5s-6.5-4.1-6.5-9.2a3.7 3.7 0 0 1 6.5-2.2 3.7 3.7 0 0 1 6.5 2.2c0 5.1-6.5 9.2-6.5 9.2z"/>',
-    notas: '<path d="M7 3.5h7.2L19 8.2V20a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 20V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M14 3.6V8.5h5M8 13h8M8 17h5.5"/>',
+    inicio: '<path d="M4 11.2 12 4l8 7.2"/><path d="M7 10.2V20h10V10.2"/>',
+    hoy: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3.5V6.5M16 3.5V6.5"/>',
+    semana: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 14h2M12 14h2M16 14h2"/>',
+    progreso: '<path d="M4 16.5 8.5 12l3 3L20 6.5"/>',
+    nutricion: '<path d="M12 20.5s-6.2-4-6.2-9a3.5 3.5 0 0 1 6.2-2 3.5 3.5 0 0 1 6.2 2c0 5-6.2 9-6.2 9z"/>',
+    notas: '<path d="M7 3.5h7.2L19 8.2V20H7z"/><path d="M14 3.6V8.5H19M8 13h8M8 17h5"/>',
   };
   return `<svg ${attrs}>${paths[name]}</svg>`;
+}
+
+function checks() {
+  try {
+    return JSON.parse(localStorage.getItem(CHECKS) || "{}");
+  } catch (err) {
+    return {};
+  }
+}
+
+function toggleCheck(id) {
+  const all = checks();
+  if (all[id]) delete all[id];
+  else all[id] = true;
+  localStorage.setItem(CHECKS, JSON.stringify(all));
+}
+
+function checkKey(session, item) {
+  return `${state.data.week.start}:${session.id}:${item.id}`;
 }
 
 function pickDay(data) {
@@ -101,20 +131,21 @@ function currentDay() {
   return state.data.days.find((day) => day.id === state.dayId) || state.data.days[0];
 }
 
+function realToday() {
+  return state.data.days.find((day) => day.date === localISO()) || state.data.days[0];
+}
+
 function menuOf(day) {
   return state.data.menus[day.menu];
 }
 
 function totals(meals) {
-  return meals.reduce(
-    (sum, meal) => ({
-      kcal: sum.kcal + meal.kcal,
-      p: sum.p + meal.p,
-      c: sum.c + meal.c,
-      g: sum.g + meal.g,
-    }),
-    { kcal: 0, p: 0, c: 0, g: 0 }
-  );
+  return meals.reduce((sum, meal) => ({
+    kcal: sum.kcal + meal.kcal,
+    p: sum.p + meal.p,
+    c: sum.c + meal.c,
+    g: sum.g + meal.g,
+  }), { kcal: 0, p: 0, c: 0, g: 0 });
 }
 
 function goalPct(goal) {
@@ -123,9 +154,64 @@ function goalPct(goal) {
 }
 
 function markerIndex(data) {
-  const today = localISO();
-  const index = data.load.points.findIndex((point) => point.date === today);
+  const index = data.load.points.findIndex((point) => point.date === localISO());
   return index >= 0 ? index : data.load.hoyIndex;
+}
+
+function weekProgress() {
+  const tally = { minutosPlan: 0, minutosHechos: 0, sesionesPlan: 0, sesionesHechas: 0 };
+  state.data.days.forEach((day) => {
+    day.sessions.forEach((session) => {
+      if (!session.cuentaEnPlan) return;
+      tally.sesionesPlan += 1;
+      tally.minutosPlan += session.duracionMin || 0;
+      if (session.completado) {
+        tally.sesionesHechas += 1;
+        tally.minutosHechos += session.duracionMin || 0;
+      }
+    });
+  });
+  return tally;
+}
+
+function sessionEnded(session, isToday) {
+  if (session.completado) return true;
+  if (!isToday) return false;
+  const start = parseClock(session.hora);
+  if (start == null || !session.duracionMin) return false;
+  return nowMinutes() > start + session.duracionMin;
+}
+
+function nextSession(today) {
+  const start = state.data.days.findIndex((day) => day.id === today.id);
+  const now = nowMinutes();
+  for (let index = Math.max(0, start); index < state.data.days.length; index += 1) {
+    const day = state.data.days[index];
+    for (const session of day.sessions) {
+      if (!session.cuentaEnPlan || session.completado) continue;
+      if (index === start && sessionEnded(session, true) && now > (parseClock(session.hora) || 0)) continue;
+      return { day, session };
+    }
+  }
+  return null;
+}
+
+function nextSupplement(menu) {
+  const now = nowMinutes();
+  const meals = menu.meals.filter((meal) => meal.supp && meal.supp !== "—");
+  return meals.find((meal) => {
+    const time = parseClock(meal.time);
+    return time != null && time >= now;
+  }) || null;
+}
+
+function sessionTotal(session) {
+  const bits = [];
+  if (session.duracion) bits.push(session.duracion);
+  if (session.distancia) bits.push(session.distancia);
+  if (session.metros) bits.push(`${num(session.metros)} m`);
+  if (session.largos) bits.push(`${num(session.largos)} largos`);
+  return bits.join(" · ");
 }
 
 function daySelect() {
@@ -137,45 +223,179 @@ function daySelect() {
       ? '<span class="hoy-mark">hoy</span>'
       : '<span class="hoy-mark" aria-hidden="true">&nbsp;</span>';
     return `<button type="button" class="day-chip${on}" data-day="${esc(day.id)}" aria-pressed="${day.id === state.dayId}">
-      <span class="dow">${esc(dow)}</span>
-      <span class="dom">${esc(dom || "")}</span>
-      ${hoy}
+      <span class="dow">${esc(dow)}</span><span class="dom">${esc(dom || "")}</span>${hoy}
     </button>`;
   }).join("");
   return `<div class="day-select" role="group" aria-label="Día de la semana">${chips}</div>`;
 }
 
-function sessionsHtml(sessions) {
-  return `<div class="stack">${sessions.map((session) => {
-    const color = TAG[session.tag] || "#FC4C02";
-    return `<article class="card session" style="--tag:${color}">
-      <div class="session-top">
-        <h3>${esc(session.title)}</h3>
-        <span class="tag">${esc(session.tag)}</span>
-      </div>
-      <p>${esc(session.detail)}</p>
-    </article>`;
-  }).join("")}</div>`;
+function ring(percent) {
+  const r = 30;
+  const c = 2 * Math.PI * r;
+  const dash = Math.max(0, Math.min(1, percent)) * c;
+  return `<svg class="ring" viewBox="0 0 84 84" role="img" aria-label="${Math.round(percent * 100)}% de las horas">
+    <circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--line)" stroke-width="4"/>
+    <circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"
+      stroke-dasharray="${dash.toFixed(2)} ${(c - dash).toFixed(2)}" transform="rotate(-90 42 42)"/>
+    <text x="42" y="46" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">${Math.round(percent * 100)}%</text>
+  </svg>`;
 }
 
-function agendaHtml(day, menu) {
-  return `<div class="agenda">
-    <div><span>Trabajo</span><strong>${esc(day.work)}</strong></div>
-    <div><span>Clases</span><strong>${esc(day.classes)}</strong></div>
-    <div><span>Tipo de menú</span><strong>${esc(menu.name)}</strong></div>
-  </div>`;
+function compactSession(day, session, link) {
+  const attrs = link ? `data-day="${esc(day.id)}" data-goto="hoy"` : "";
+  return `<button type="button" class="card session-link" ${attrs}>
+    <div class="session-top">
+      <span class="sport-line"><i class="dot ${esc(session.deporte)}"></i>${esc(session.title)}</span>
+      <span class="tag${session.completado ? " done" : ""}">${esc(session.tag)}</span>
+    </div>
+    <p class="total">${esc(sessionTotal(session))}</p>
+    <p class="objetivo">${esc([session.objetivo, session.hora].filter(Boolean).join(" · "))}</p>
+  </button>`;
 }
 
-function mealsHtml(meals) {
-  return `<ol class="meals">${meals.map((meal) => {
-    const supp = meal.supp && meal.supp !== "—"
-      ? `<p class="supp">${esc(meal.supp)}</p>`
-      : "";
-    return `<li class="meal card">
-      <div class="meal-head">
-        <span class="meal-time">${esc(meal.time)}</span>
-        <strong class="meal-name">${esc(meal.name)}</strong>
+function renderInicio() {
+  const today = realToday();
+  const outside = today.date !== localISO();
+  const progress = weekProgress();
+  const ratio = progress.minutosPlan ? progress.minutosHechos / progress.minutosPlan : 0;
+  const upcoming = nextSession(today);
+  const menu = menuOf(today);
+  const total = totals(menu.meals);
+  const supplement = nextSupplement(menu);
+  const protein = state.data.nutrition.targets.find((item) => item.label === "Proteína");
+  const energy = state.data.nutrition.targets.find((item) => item.label === "Energía");
+  const metrics = ["peso", "vfc", "fc-reposo"].map((id) => state.data.athlete.metrics.find((item) => item.id === id)).filter(Boolean);
+  const cards = today.sessions.map((session) => compactSession(today, session, true)).join("");
+  const next = upcoming
+    ? `<button type="button" class="card" data-day="${esc(upcoming.day.id)}" data-goto="hoy">
+        <p class="kicker">Siguiente</p>
+        <h2>${esc(upcoming.day.label)} · ${esc(upcoming.session.title)}</h2>
+        <p class="total">${esc(sessionTotal(upcoming.session))}</p>
+        <p class="objetivo">${esc([upcoming.session.objetivo, upcoming.session.hora].filter(Boolean).join(" · "))}</p>
+      </button>`
+    : `<section class="card"><p class="quiet">No queda otra sesión planificada esta semana.</p></section>`;
+  const supp = supplement
+    ? `<section class="card"><p class="kicker">Siguiente suplemento</p><h2>${esc(supplement.time)} · ${esc(supplement.name)}</h2><p class="objetivo">${esc(supplement.supp)}</p></section>`
+    : `<section class="card"><p class="kicker">Suplementos</p><p class="quiet">Ya has pasado los momentos de hoy.</p></section>`;
+  return `<p class="kicker">${outside ? "Lunes del plan" : "Hoy"} · ${esc(longDate(today.date))}</p>
+    <h2 id="panel-title">${esc(state.data.phase.name)}</h2>
+    <p class="quiet">Semana ${esc(state.data.phase.weekNumber)} de ${esc(state.data.phase.weeksTotal)} · día ${esc(state.data.phase.dayNumber)} de ${esc(state.data.phase.daysTotal)}</p>
+    <section class="card home-top">
+      ${ring(ratio)}
+      <div>
+        <div class="stat"><b>${clock(progress.minutosHechos)} de ${clock(progress.minutosPlan)} h</b><span>Horas hechas</span></div>
+        <div class="stat"><b>${progress.sesionesHechas} de ${progress.sesionesPlan}</b><span>Sesiones hechas</span></div>
       </div>
+    </section>
+    <div class="section"><h2>Sesiones de hoy</h2></div>
+    <div class="stack">${cards}</div>
+    ${next}
+    <section class="card">
+      <p class="kicker">Comida de hoy</p>
+      <p class="kcal">${num(total.kcal)}<span>kcal en el menú · ${num(total.p)} g de proteína</span></p>
+      <p class="quiet">${esc(energy?.value || "")}. ${esc(protein?.value || "")}.</p>
+    </section>
+    ${supp}
+    <section class="card"><p class="kicker">Atención</p><h2>${esc(state.data.week.alerta)}</h2></section>
+    <div class="metrics">${metrics.map((metric) => `<div class="metric"><div class="value">${esc(metric.value)}</div><div class="label">${esc(metric.label)}</div></div>`).join("")}</div>`;
+}
+
+function timeline(blocks) {
+  if (!blocks.length) return "";
+  return `<ol class="timeline">${blocks.map(blockHtml).join("")}</ol>`;
+}
+
+function blockHtml(block) {
+  const when = block.duracion || block.distancia || "";
+  const bits = [];
+  if (block.duracion && block.distancia) bits.push(block.distancia);
+  if (block.metros && block.distancia && block.distancia.includes("×")) bits.push(`${num(block.metros)} m`);
+  if (block.largos) bits.push(block.largos);
+  if (block.descanso) bits.push(`desc ${block.descanso}`);
+  if (block.intensidad?.zona) bits.push(block.intensidad.zona);
+  if (block.intensidad?.fc) bits.push(block.intensidad.fc);
+  if (block.intensidad?.texto) bits.push(block.intensidad.texto);
+  if (block.descripcion) bits.push(block.descripcion);
+  return `<li class="tl"><div class="tl-when">${esc(when)}</div><div><div class="tl-name">${esc(block.nombre)}</div><p>${esc(bits.join(" · "))}</p></div></li>`;
+}
+
+function exercisesHtml(session) {
+  const saved = checks();
+  if (!session.ejercicios?.length) return "";
+  return session.ejercicios.map((group) => {
+    const label = group.items.length > 1 ? `Superserie ${group.grupo}` : group.grupo;
+    const rows = group.items.map((item) => {
+      const id = checkKey(session, item);
+      const on = Boolean(saved[id]);
+      const meta = [`${item.series}×${item.reps}`];
+      if (item.descanso) meta.push(`desc ${item.descanso}`);
+      if (item.rir) meta.push(`RIR ${item.rir}`);
+      if (item.notas) meta.push(item.notas);
+      return `<button type="button" class="check" data-check="${esc(id)}" aria-pressed="${on}">
+        <span class="box" aria-hidden="true">${on ? "✓" : ""}</span>
+        <span><span class="ex-name"><span class="ex-id">${esc(item.id)}</span>${esc(item.nombre)}</span><span class="ex-meta">${esc(meta.join(" · "))}</span></span>
+      </button>`;
+    }).join("");
+    return `<div class="ex-group"><h3>${esc(label)}</h3>${rows}</div>`;
+  }).join("");
+}
+
+function kitHtml(items) {
+  if (!items?.length) return "";
+  return `<div class="callout"><strong>Llevar</strong><div class="chips">${items.map((item) => `<span class="chip">${esc(item)}</span>`).join("")}</div></div>`;
+}
+
+function sessionHtml(session, dayKit) {
+  const pool = session.deporte === "natacion" && state.data.week.piscinaM
+    ? `<p class="quiet">Piscina de ${esc(state.data.week.piscinaM)} m.</p>`
+    : "";
+  const note = session.nota ? `<p class="callout">${esc(session.nota)}</p>` : "";
+  const fuel = session.nutricion_durante ? `<div class="callout"><strong>Durante</strong><p>${esc(session.nutricion_durante)}</p></div>` : "";
+  const ownKit = session.llevar?.length ? session.llevar : [];
+  return `<article class="card">
+    <div class="session-top">
+      <span class="sport-line"><i class="dot ${esc(session.deporte)}"></i>${esc(session.hora || SPORT_LABEL[session.deporte] || session.deporte)}</span>
+      <span class="tag${session.completado ? " done" : ""}">${esc(session.tag)}</span>
+    </div>
+    <h3>${esc(session.title)}</h3>
+    <p class="total">${esc(sessionTotal(session))}</p>
+    ${session.objetivo ? `<p class="objetivo">${esc(session.objetivo)}</p>` : ""}
+    ${pool}
+    ${note}
+    ${timeline((session.bloques || []).filter((block) => block.fase !== "despues"))}
+    ${exercisesHtml(session)}
+    ${timeline((session.bloques || []).filter((block) => block.fase === "despues"))}
+    ${kitHtml(ownKit.length ? ownKit : dayKit)}
+    ${fuel}
+  </article>`;
+}
+
+function renderHoy() {
+  const day = currentDay();
+  const menu = menuOf(day);
+  const total = totals(menu.meals);
+  const parts = [
+    { label: "Hidratos", grams: total.c, kcal: total.c * 4, color: "var(--accent)" },
+    { label: "Proteína", grams: total.p, kcal: total.p * 4, color: "var(--bici)" },
+    { label: "Grasa", grams: total.g, kcal: total.g * 9, color: "var(--natacion)" },
+  ];
+  const note = day.note ? `<aside class="callout">${esc(day.note)}</aside>` : "";
+  const targets = state.data.nutrition.targets.map((item) => `<div class="prop"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`).join("");
+  const sharedKit = day.llevar?.length && day.sessions.every((session) => !session.llevar?.length) ? day.llevar : [];
+  return `${daySelect()}
+    <p class="kicker">${day.date === localISO() ? "Hoy · " : ""}${esc(longDate(day.date))}</p>
+    <div class="section"><h2 id="panel-title">${esc(day.focus)}</h2></div>
+    <div class="stack">${day.sessions.map((session) => sessionHtml(session, sharedKit)).join("")}</div>
+    ${note}
+    <div class="section"><h2>Agenda</h2></div>
+    <div class="agenda">
+      <div><span>Trabajo</span><strong>${esc(day.work)}</strong></div>
+      <div><span>Clases</span><strong>${esc(day.classes)}</strong></div>
+      <div><span>Menú</span><strong>${esc(menu.name)}</strong></div>
+    </div>
+    <div class="section"><h2>Menú, macros y suplementos</h2></div>
+    <ol class="meals">${menu.meals.map((meal) => `<li class="card">
+      <div class="meal-head"><span class="meal-time">${esc(meal.time)}</span><strong>${esc(meal.name)}</strong></div>
       <p class="meal-food">${esc(meal.food)}</p>
       <div class="chips">
         <span class="chip">${num(meal.kcal)} kcal</span>
@@ -183,29 +403,34 @@ function mealsHtml(meals) {
         <span class="chip">${num(meal.c)} g hidr.</span>
         <span class="chip">${num(meal.g)} g grasa</span>
       </div>
-      ${supp}
-    </li>`;
-  }).join("")}</ol>`;
+      ${meal.supp && meal.supp !== "—" ? `<p class="supp">${esc(meal.supp)}</p>` : ""}
+    </li>`).join("")}</ol>
+    <section class="card">
+      <h2>Reparto del día</h2>
+      <p class="kcal">${num(total.kcal)}<span>kcal · ${num(total.p)} g proteína · ${num(total.c)} g hidratos · ${num(total.g)} g grasa</span></p>
+      <div class="donut-row">${donutSvg(parts, num(total.kcal))}${legendHtml(parts)}</div>
+    </section>
+    <section class="card"><h2>Objetivos diarios</h2><div class="props">${targets}</div></section>
+    <p class="quiet">${esc(state.data.nutrition.macrosNote)}</p>`;
 }
 
 function donutSvg(parts, center) {
   const energy = parts.reduce((sum, part) => sum + part.kcal, 0);
-  const r = 54;
+  const r = 46;
   const c = 2 * Math.PI * r;
   let offset = 0;
   const arcs = parts.map((part) => {
     const len = energy ? (part.kcal / energy) * c : 0;
-    const gap = len > 4 ? 3 : 0;
-    const dash = Math.max(0, len - gap);
-    const circle = `<circle cx="80" cy="80" r="${r}" fill="none" stroke="${part.color}" stroke-width="16" stroke-dasharray="${dash.toFixed(2)} ${(c - dash).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 80 80)"/>`;
+    const dash = Math.max(0, len - 2);
+    const circle = `<circle cx="70" cy="70" r="${r}" fill="none" stroke="${part.color}" stroke-width="10" stroke-dasharray="${dash.toFixed(2)} ${(c - dash).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 70 70)"/>`;
     offset += len;
     return circle;
   }).join("");
-  return `<svg viewBox="0 0 160 160" role="img" aria-label="Reparto de energía del día, ${esc(center)} kcal">
-    <circle cx="80" cy="80" r="${r}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="16"/>
+  return `<svg viewBox="0 0 140 140" role="img" aria-label="Reparto del día, ${esc(center)} kcal">
+    <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--line)" stroke-width="10"/>
     ${arcs}
-    <text x="80" y="76" text-anchor="middle" fill="#f4f6f8" font-size="20" font-weight="800">${esc(center)}</text>
-    <text x="80" y="96" text-anchor="middle" fill="#a3adbb" font-size="11" font-weight="700">kcal</text>
+    <text x="70" y="68" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">${esc(center)}</text>
+    <text x="70" y="84" text-anchor="middle" fill="var(--muted)" font-size="10">kcal</text>
   </svg>`;
 }
 
@@ -215,53 +440,6 @@ function legendHtml(parts) {
     const pct = energy ? Math.round((part.kcal / energy) * 100) : 0;
     return `<div><i style="background:${part.color}"></i><span>${esc(part.label)}</span><b>${num(part.grams)} g · ${pct}%</b></div>`;
   }).join("")}</div>`;
-}
-
-function macroParts(total, palette) {
-  return [
-    { label: "Hidratos", grams: total.c, kcal: total.c * 4, color: palette[0] },
-    { label: "Proteína", grams: total.p, kcal: total.p * 4, color: palette[1] },
-    { label: "Grasa", grams: total.g, kcal: total.g * 9, color: palette[2] },
-  ];
-}
-
-function renderHoy() {
-  const day = currentDay();
-  const menu = menuOf(day);
-  const total = totals(menu.meals);
-  const parts = macroParts(total, state.data.palette);
-  const today = day.date === localISO();
-  const note = day.note ? `<aside class="callout info">${esc(day.note)}</aside>` : "";
-  const targets = state.data.nutrition.targets.map((item) =>
-    `<div class="prop"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`
-  ).join("");
-  return `${daySelect()}
-    <p class="eyebrow">${today ? "Hoy · " : ""}${esc(longDate(day.date))}</p>
-    <div class="section-head"><h2 id="panel-title">Entreno · ${esc(day.focus)}</h2></div>
-    ${sessionsHtml(day.sessions)}
-    ${note}
-    <div class="section-head"><h2>Agenda</h2></div>
-    ${agendaHtml(day, menu)}
-    <div class="section-head"><h2>Menú, macros y suplementos</h2></div>
-    ${mealsHtml(menu.meals)}
-    <section class="card">
-      <h2>Reparto de energía del día</h2>
-      <div class="kcal-num">${num(total.kcal)}<span>kcal en las comidas</span></div>
-      <div class="chips">
-        <span class="chip">${num(total.p)} g proteína</span>
-        <span class="chip">${num(total.c)} g hidratos</span>
-        <span class="chip">${num(total.g)} g grasa</span>
-      </div>
-      <div class="donut-row">
-        ${donutSvg(parts, num(total.kcal))}
-        ${legendHtml(parts)}
-      </div>
-    </section>
-    <section class="card">
-      <h2>Objetivos diarios</h2>
-      <div class="props">${targets}</div>
-    </section>
-    <p class="note">${esc(state.data.nutrition.macrosNote)}</p>`;
 }
 
 function eventClass(event) {
@@ -279,71 +457,34 @@ function renderCalendar() {
   const now = new Date();
   const nowHour = now.getHours() + now.getMinutes() / 60;
   const times = [];
-  for (let hour = start; hour < end; hour += 1) {
-    times.push(`<div class="cal-time">${hour}:00</div>`);
-  }
+  for (let hour = start; hour < end; hour += 1) times.push(`<div class="cal-time">${hour}:00</div>`);
   const columns = days.map((day) => {
     const blocks = events.filter((event) => event.date === day.date).map((event) => {
-      const a = Math.max(event.start, start);
-      const b = Math.min(event.end, end);
-      const top = ((a - start) / span) * 100;
-      const height = ((b - a) / span) * 100;
-      return `<div class="cal-event ${eventClass(event)}" style="top:${top}%;height:${height}%" title="${esc(event.title)}"><span>${esc(event.title)}</span></div>`;
+      const top = ((Math.max(event.start, start) - start) / span) * 100;
+      const height = ((Math.min(event.end, end) - Math.max(event.start, start)) / span) * 100;
+      return `<div class="cal-event ${eventClass(event)}" style="top:${top}%;height:${height}%">${esc(event.title)}</div>`;
     }).join("");
-    let nowLine = "";
-    if (day.date === today && nowHour >= start && nowHour <= end) {
-      nowLine = `<div class="now-line" style="top:${((nowHour - start) / span) * 100}%"></div>`;
-    }
-    const classes = [
-      "cal-day",
-      day.date === today ? "is-today" : "",
-      day.id === state.dayId ? "is-selected" : "",
-    ].filter(Boolean).join(" ");
-    return `<div class="${classes}">
-      <button type="button" class="cal-day-h" data-day="${esc(day.id)}">${esc(day.label)}</button>
-      <div class="cal-track">${nowLine}${blocks}</div>
-    </div>`;
+    const nowLine = day.date === today && nowHour >= start && nowHour <= end
+      ? `<div class="now-line" style="top:${((nowHour - start) / span) * 100}%"></div>` : "";
+    const classes = ["cal-day", day.date === today ? "is-today" : "", day.id === state.dayId ? "is-selected" : ""].filter(Boolean).join(" ");
+    return `<div class="${classes}"><button type="button" class="cal-day-h" data-day="${esc(day.id)}">${esc(day.label)}</button><div class="cal-track">${nowLine}${blocks}</div></div>`;
   }).join("");
-  return `<div class="cal-scroll">
-    <div class="cal" style="--span:${span}">
-      <div class="cal-times"><div class="cal-corner"></div>${times.join("")}</div>
-      ${columns}
-    </div>
-  </div>
-  <div class="cal-key">
-    <span><i class="work"></i>Trabajo</span>
-    <span><i class="class"></i>Clase</span>
-    <span><i class="train"></i>Entreno</span>
-  </div>`;
+  return `<div class="cal-scroll"><div class="cal" style="--span:${span}"><div class="cal-times"><div class="cal-corner"></div>${times.join("")}</div>${columns}</div></div>
+    <div class="cal-key"><span><i class="work"></i>Trabajo</span><span><i class="class"></i>Clase</span><span><i class="train"></i>Entreno</span></div>`;
 }
 
 function renderSemana() {
   const hours = Object.fromEntries(state.data.distribution.byDay.map((row) => [row.id, row.display]));
-  const cards = state.data.days.map((day) => {
-    const menu = menuOf(day);
-    const on = day.id === state.dayId ? " is-on" : "";
-    const items = day.sessions.map((session) =>
-      `<li><span class="tag" style="--tag:${TAG[session.tag] || "#FC4C02"}">${esc(session.tag)}</span> ${esc(session.title)}</li>`
-    ).join("");
-    return `<button type="button" class="day-card${on}" data-day="${esc(day.id)}" data-goto="hoy">
-      <header>
-        <strong>${esc(day.label)}</strong>
-        <span class="hours-pill">${esc(hours[day.id] || "")}</span>
-      </header>
-      <p class="meta">${esc(day.focus)}</p>
-      <p class="meta">Trabajo: ${esc(day.work)}</p>
-      <p class="meta">Clases: ${esc(day.classes)}</p>
-      <p class="meta">Menú: ${esc(menu.name)}</p>
-      <ul>${items}</ul>
-    </button>`;
-  }).join("");
+  const cards = state.data.days.map((day) => `<button type="button" class="day-card${day.id === state.dayId ? " is-on" : ""}" data-day="${esc(day.id)}" data-goto="hoy">
+    <header><strong>${esc(day.label)}</strong><span>${esc(hours[day.id] || "")}</span></header>
+    <p class="meta">${esc(day.focus)}</p>
+    <ul>${day.sessions.map((session) => `<li><i class="dot ${esc(session.deporte)}"></i><span>${esc(session.title)} · ${esc(session.duracion || "")}${session.objetivo ? ` · ${esc(session.objetivo)}` : ""}</span></li>`).join("")}</ul>
+  </button>`).join("");
   return `${daySelect()}
-    <div class="section-head">
-      <h2 id="panel-title">Calendario de la semana</h2>
-    </div>
-    <p class="caption">${esc(state.data.week.calendarCaption)}</p>
+    <div class="section"><h2 id="panel-title">Calendario de la semana</h2></div>
+    <p class="quiet">${esc(state.data.week.calendarCaption)}</p>
     <section class="card">${renderCalendar()}</section>
-    <div class="section-head"><h2>Días</h2></div>
+    <div class="section"><h2>Días</h2></div>
     <div class="day-cards">${cards}</div>`;
 }
 
@@ -356,55 +497,45 @@ function chartTicks(floor, ceiling, withZero) {
 
 function lineChart(points, series, floor, ceiling, hoy, options) {
   const W = 360;
-  const H = 214;
-  const pad = { l: 36, r: 12, t: 18, b: 28 };
+  const H = 200;
+  const pad = { l: 34, r: 10, t: 16, b: 26 };
   const iw = W - pad.l - pad.r;
   const ih = H - pad.t - pad.b;
   const n = points.length;
-  const x = (index) => pad.l + (n <= 1 ? iw / 2 : (index / (n - 1)) * iw);
-  const y = (value) => {
-    const clamped = Math.min(ceiling, Math.max(floor, value));
-    return pad.t + ((ceiling - clamped) / (ceiling - floor)) * ih;
-  };
+  const x = (index) => pad.l + (index / (n - 1)) * iw;
+  const y = (value) => pad.t + ((ceiling - Math.min(ceiling, Math.max(floor, value))) / (ceiling - floor)) * ih;
   const grids = chartTicks(floor, ceiling, options.zeroLabel).map((tick) => {
-    const yy = y(tick).toFixed(1);
-    return `<line x1="${pad.l}" y1="${yy}" x2="${W - pad.r}" y2="${yy}" stroke="rgba(255,255,255,.08)"/>
-      <text x="${pad.l - 6}" y="${Number(yy) + 3}" text-anchor="end" fill="#8b95a7" font-size="10">${esc(num(tick))}</text>`;
+    const yy = y(tick);
+    return `<line x1="${pad.l}" y1="${yy.toFixed(1)}" x2="${W - pad.r}" y2="${yy.toFixed(1)}" stroke="var(--line)"/>
+      <text x="${pad.l - 6}" y="${(yy + 3).toFixed(1)}" text-anchor="end" fill="var(--faint)" font-size="10">${esc(num(tick))}</text>`;
   }).join("");
   const lines = series.map((item) => {
     const d = points.map((point, index) => `${index ? "L" : "M"}${x(index).toFixed(1)},${y(point[item.key]).toFixed(1)}`).join("");
-    return `<path d="${d}" fill="none" stroke="${item.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-      <circle cx="${x(hoy).toFixed(1)}" cy="${y(points[hoy][item.key]).toFixed(1)}" r="3.6" fill="${item.color}" stroke="#0c0e12" stroke-width="1.5"/>`;
+    return `<path d="${d}" fill="none" stroke="${item.color}" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${x(hoy).toFixed(1)}" cy="${y(points[hoy][item.key]).toFixed(1)}" r="2.6" fill="${item.color}"/>`;
   }).join("");
-  const labels = points.map((point, index) => {
-    if (!point.label) return "";
-    return `<text x="${x(index).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="#8b95a7" font-size="10">${esc(point.label)}</text>`;
-  }).join("");
+  const labels = points.map((point, index) => point.label
+    ? `<text x="${x(index).toFixed(1)}" y="${H - 6}" text-anchor="middle" fill="var(--faint)" font-size="10">${esc(point.label)}</text>` : "").join("");
   const hx = x(hoy);
-  const hoyLabel = `<line x1="${hx.toFixed(1)}" y1="${pad.t}" x2="${hx.toFixed(1)}" y2="${(pad.t + ih).toFixed(1)}" stroke="#FC4C02" stroke-dasharray="3 3"/>
-    <text x="${Math.max(pad.l + 14, Math.min(hx, W - pad.r - 12)).toFixed(1)}" y="12" text-anchor="middle" fill="#FC4C02" font-size="10" font-weight="700">${esc(options.hoyLabel || "hoy")}</text>`;
-  let zero = "";
-  if (options.zeroLabel && floor < 0 && ceiling > 0) {
-    const zy = y(0);
-    zero = `<line x1="${pad.l}" y1="${zy.toFixed(1)}" x2="${W - pad.r}" y2="${zy.toFixed(1)}" stroke="rgba(255,255,255,.55)" stroke-dasharray="4 3"/>
-      <text x="${W - pad.r}" y="${(zy - 5).toFixed(1)}" text-anchor="end" fill="#d5dbe6" font-size="10">${esc(options.zeroLabel)}</text>`;
-  }
-  const table = `<table class="sr-only"><caption>${esc(options.aria || "Gráfico")}</caption><thead><tr><th>Fecha</th>${series.map((item) => `<th>${esc(item.label)}</th>`).join("")}</tr></thead><tbody>
-    ${points.map((point) => `<tr><td>${esc(point.date)}</td>${series.map((item) => `<td>${esc(num(point[item.key]))}</td>`).join("")}</tr>`).join("")}
-  </tbody></table>`;
-  return `<div class="chart">${table}<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(options.aria || "Gráfico")}">${grids}${zero}${lines}${hoyLabel}${labels}</svg></div>`;
+  const marker = `<line x1="${hx.toFixed(1)}" y1="${pad.t}" x2="${hx.toFixed(1)}" y2="${(pad.t + ih).toFixed(1)}" stroke="var(--accent)" stroke-dasharray="2 3"/>
+    <text x="${Math.max(pad.l + 12, Math.min(hx, W - 28)).toFixed(1)}" y="11" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="700">${esc(options.hoyLabel || "hoy")}</text>`;
+  const zero = options.zeroLabel && floor < 0 && ceiling > 0
+    ? `<line x1="${pad.l}" y1="${y(0).toFixed(1)}" x2="${W - pad.r}" y2="${y(0).toFixed(1)}" stroke="var(--faint)" stroke-dasharray="3 3"/>
+      <text x="${W - pad.r}" y="${(y(0) - 4).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="10">${esc(options.zeroLabel)}</text>`
+    : "";
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(options.aria || "Gráfico")}">${grids}${zero}${lines}${marker}${labels}</svg></div>`;
 }
 
 function stackedColumns(labels, series) {
   const W = 360;
-  const H = 236;
-  const pad = { l: 32, r: 8, t: 22, b: 40 };
+  const H = 220;
+  const pad = { l: 28, r: 8, t: 18, b: 36 };
   const iw = W - pad.l - pad.r;
   const ih = H - pad.t - pad.b;
   const totals = labels.map((_, index) => series.reduce((sum, item) => sum + item.values[index], 0));
   const yMax = Math.max(1, Math.ceil(Math.max(...totals)));
   const slot = iw / labels.length;
-  const bw = Math.min(46, slot * 0.52);
+  const bw = Math.min(42, slot * 0.46);
   let shapes = "";
   labels.forEach((label, index) => {
     let acc = 0;
@@ -412,150 +543,69 @@ function stackedColumns(labels, series) {
     series.forEach((item) => {
       const value = item.values[index];
       if (!value) return;
-      const gap = acc > 0 ? 1.5 : 0;
-      const h = Math.max(0, (value / yMax) * ih - gap);
+      const h = (value / yMax) * ih;
       const y = pad.t + ih - ((acc + value) / yMax) * ih;
       acc += value;
-      shapes += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${SPORT[item.name] || "#FC4C02"}"/>`;
+      shapes += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, h - 1).toFixed(1)}" fill="${SPORT_COLOR[item.name] || "var(--accent)"}"/>`;
     });
-    shapes += `<text x="${(x + bw / 2).toFixed(1)}" y="${(pad.t + ih - (acc / yMax) * ih - 6).toFixed(1)}" text-anchor="middle" fill="#e8edf4" font-size="11" font-weight="700">${esc(num(totals[index]))}</text>`;
     const lines = label.includes(" (") ? [label.slice(0, label.indexOf(" (")), label.slice(label.indexOf(" (") + 1)] : [label];
     lines.forEach((line, lineIndex) => {
-      shapes += `<text x="${(pad.l + slot * index + slot / 2).toFixed(1)}" y="${(H - 22 + lineIndex * 12).toFixed(1)}" text-anchor="middle" fill="#8b95a7" font-size="10">${esc(line)}</text>`;
+      shapes += `<text x="${(pad.l + slot * index + slot / 2).toFixed(1)}" y="${(H - 20 + lineIndex * 12).toFixed(1)}" text-anchor="middle" fill="var(--faint)" font-size="10">${esc(line)}</text>`;
     });
   });
-  const axis = [0, yMax].map((tick) => {
-    const yy = (pad.t + ih - (tick / yMax) * ih).toFixed(1);
-    return `<text x="${pad.l - 6}" y="${Number(yy) + 3}" text-anchor="end" fill="#8b95a7" font-size="10">${tick}</text>`;
-  }).join("");
-  const legend = `<div class="chart-legend">${series.map((item) =>
-    `<span><i style="background:${SPORT[item.name]}"></i>${esc(item.name)}</span>`
-  ).join("")}</div>`;
-  const table = `<table class="sr-only"><caption>Horas por semana y deporte</caption><thead><tr><th>Semana</th>${series.map((item) => `<th>${esc(item.name)}</th>`).join("")}</tr></thead><tbody>
-    ${labels.map((label, index) => `<tr><td>${esc(label)}</td>${series.map((item) => `<td>${esc(num(item.values[index]))}</td>`).join("")}</tr>`).join("")}
-  </tbody></table>`;
-  return `${table}<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Horas por semana y deporte">${axis}${shapes}<text x="4" y="14" fill="#8b95a7" font-size="10">h</text></svg></div>${legend}`;
+  const legend = `<div class="chart-legend">${series.map((item) => `<span><i style="background:${SPORT_COLOR[item.name]}"></i>${esc(item.name)}</span>`).join("")}</div>`;
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Horas por semana y deporte">${shapes}</svg></div>${legend}`;
 }
 
 function disciplineBars(rows) {
   const max = Math.max(...rows.map((row) => row.hours), 0.01);
-  return rows.map((row) => {
-    const pct = Math.max(2, Math.round((row.hours / max) * 100));
-    return `<div class="hbar${row.emphasis ? " is-em" : ""}">
-      <div class="hbar-top"><span>${esc(row.label)}</span><strong>${esc(row.display)}</strong></div>
-      <div class="hbar-track"><div class="hbar-fill" style="width:${pct}%;background:${SPORT[row.label] || "#FC4C02"}"></div></div>
-    </div>`;
-  }).join("");
+  return rows.map((row) => `<div class="hbar"><div class="hbar-top"><span class="sport-line"><i class="dot ${esc(row.label === "Natación" ? "natacion" : row.label.toLowerCase())}"></i>${esc(row.label)}</span><strong>${esc(row.display)}</strong></div><div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(2, Math.round((row.hours / max) * 100))}%;background:${SPORT_COLOR[row.label] || "var(--accent)"}"></div></div></div>`).join("");
 }
 
 function dayColumns(rows) {
   const max = Math.max(...rows.map((row) => row.hours), 0.01);
-  return `<div class="cols">${rows.map((row) => {
-    const pct = Math.max(4, Math.round((row.hours / max) * 100));
-    return `<div class="col${row.emphasis ? " is-em" : ""}">
-      <span class="col-val">${esc(row.display)}</span>
-      <div class="col-track"><div class="col-fill" style="--h:${pct}%"></div></div>
-      <span class="col-lab">${esc(row.label)}</span>
-    </div>`;
-  }).join("")}</div>`;
+  return `<div class="cols">${rows.map((row) => `<div class="col"><span class="col-val">${esc(row.display)}</span><div class="col-track"><div class="col-fill" style="--h:${row.hours ? Math.max(4, Math.round((row.hours / max) * 100)) : 0}%"></div></div><span class="col-lab">${esc(row.label)}</span></div>`).join("")}</div>`;
 }
 
 function renderProgreso() {
-  const { athlete, load, goals, palette, weeklyHours, distribution, records } = state.data;
+  const { athlete, load, goals, weeklyHours, distribution, records } = state.data;
   const hoy = markerIndex(state.data);
   const point = load.points[hoy];
-  const bits = [
-    athlete.name,
-    athlete.age ? `${athlete.age} años` : "",
-    athlete.heightM ? `${num(athlete.heightM)} m` : "",
-    athlete.level || "",
-  ].filter(Boolean);
-  const metrics = athlete.metrics.map((metric) =>
-    `<article class="metric${metric.tone === "success" ? " success" : ""}">
-      <div class="value">${esc(metric.value)}</div>
-      <div class="label">${esc(metric.label)}</div>
-      ${metric.detail ? `<div class="detail">${esc(metric.detail)}</div>` : ""}
-    </article>`
-  ).join("");
-  const pending = athlete.pending.map((item) =>
-    `<div class="prop"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`
-  ).join("");
-  const fitness = lineChart(
-    load.points,
-    [
-      { key: "ctl", label: load.fitness.label, color: "#2D7FF9" },
-      { key: "atl", label: load.fatigue.label, color: "#FC4C02" },
-    ],
-    load.fitness.floor,
-    load.fitness.ceiling,
-    hoy,
-    { hoyLabel: load.hoyLabel, aria: "Condición física y fatiga" }
-  );
-  const form = lineChart(
-    load.points,
-    [{ key: "tsb", label: load.form.label, color: "#A855F7" }],
-    load.form.floor,
-    load.form.ceiling,
-    hoy,
-    { hoyLabel: load.hoyLabel, zeroLabel: load.zeroLabel, aria: "Forma, condición menos fatiga" }
-  );
-  const goalBars = goals.map((goal) => {
-    const pct = goalPct(goal);
-    const color = palette[goal.color] || palette[0];
-    return `<div class="goal">
-      <div class="goal-top"><span>${esc(goal.name)}</span><span>${esc(goal.nowLabel)} de ${esc(goal.targetLabel)} · ${pct}%</span></div>
-      <div class="track" role="img" aria-label="${esc(goal.name)} ${pct}%"><div class="fill" style="width:${pct}%;background:${color}"></div></div>
-    </div>`;
-  }).join("");
-  const recordList = records.map((record) =>
-    `<li class="record">
-      <div><strong>${esc(record.title)}</strong><p>${esc(record.detail)}</p></div>
-      <span class="badge ${record.tone === "success" ? "success" : "neutral"}">${esc(record.badge)}</span>
-    </li>`
-  ).join("");
-  return `<p class="profile">${esc(bits.join(" · "))}</p>
-    <p class="lede">${esc(athlete.asOf)}</p>
-    <div class="section-head"><h2 id="panel-title">Atleta</h2></div>
-    <section class="card">
-      <div class="metrics">${metrics}</div>
-      <div class="props">${pending}</div>
-    </section>
-    <div class="section-head"><h2>Estado de entreno y condición física</h2></div>
-    <p class="caption">${esc(load.caption)}</p>
+  const bits = [athlete.name, athlete.age ? `${athlete.age} años` : "", athlete.heightM ? `${Number(athlete.heightM).toLocaleString("es-ES", { minimumFractionDigits: 2 })} m` : "", athlete.level || ""].filter(Boolean);
+  const metrics = athlete.metrics.map((metric) => `<div class="metric"><div class="value">${esc(metric.value)}</div><div class="label">${esc(metric.label)}</div>${metric.detail ? `<div class="label">${esc(metric.detail)}</div>` : ""}</div>`).join("");
+  const pending = athlete.pending.map((item) => `<div class="prop"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`).join("");
+  const fitness = lineChart(load.points, [
+    { key: "ctl", label: load.fitness.label, color: "var(--bici)" },
+    { key: "atl", label: load.fatigue.label, color: "var(--accent)" },
+  ], load.fitness.floor, load.fitness.ceiling, hoy, { hoyLabel: load.hoyLabel, aria: "Condición física y fatiga" });
+  const form = lineChart(load.points, [
+    { key: "tsb", label: load.form.label, color: "var(--fuerza)" },
+  ], load.form.floor, load.form.ceiling, hoy, { hoyLabel: load.hoyLabel, zeroLabel: load.zeroLabel, aria: "Forma" });
+  const goalBars = goals.map((goal) => `<div class="goal"><div class="goal-top"><span>${esc(goal.name)}</span><span>${esc(goal.nowLabel)} de ${esc(goal.targetLabel)} · ${goalPct(goal)}%</span></div><div class="track"><div class="fill" style="width:${goalPct(goal)}%"></div></div></div>`).join("");
+  const recordList = records.map((record) => `<li class="record"><div><strong>${esc(record.title)}</strong><p>${esc(record.detail)}</p></div><span class="badge${record.tone === "success" ? " ok" : ""}">${esc(record.badge)}</span></li>`).join("");
+  return `<p class="quiet">${esc(bits.join(" · "))}</p>
+    <p class="quiet">${esc(athlete.asOf)}</p>
+    <div class="section"><h2 id="panel-title">Atleta</h2></div>
+    <section class="card"><div class="metrics">${metrics}</div><div class="props">${pending}</div></section>
+    <div class="section"><h2>Estado de entreno y condición física</h2></div>
+    <p class="quiet">${esc(load.caption)}</p>
     <div class="grid-2">
-      <section class="card">
-        <h2>Condición física y fatiga</h2>
-        ${fitness}
-        <div class="chart-legend">
-          <span><i style="background:#2D7FF9"></i>${esc(load.fitness.label)}</span>
-          <span><i style="background:#FC4C02"></i>${esc(load.fatigue.label)}</span>
-        </div>
-      </section>
-      <section class="card">
-        <h2>Forma (condición menos fatiga)</h2>
-        ${form}
-        <div class="chart-legend"><span><i style="background:#A855F7"></i>${esc(load.form.label)}</span></div>
-      </section>
+      <section class="card"><h2>Condición física y fatiga</h2>${fitness}<div class="chart-legend"><span><i style="background:var(--bici)"></i>${esc(load.fitness.label)}</span><span><i style="background:var(--accent)"></i>${esc(load.fatigue.label)}</span></div></section>
+      <section class="card"><h2>Forma</h2>${form}<div class="chart-legend"><span><i style="background:var(--fuerza)"></i>${esc(load.form.label)}</span></div></section>
     </div>
-    <p class="note">Marcador «${esc(load.hoyLabel)}» (${esc(shortDate(point.date))}): condición física ${num(point.ctl)} · fatiga ${num(point.atl)} · forma ${num(point.tsb)}.</p>
-    <p class="note">${esc(load.formNote)}</p>
-    <div class="section-head"><h2>Hacia tus objetivos</h2></div>
+    <p class="quiet">«${esc(load.hoyLabel)}» ${esc(shortDate(point.date))}: condición ${point.ctl.toLocaleString("es-ES")} · fatiga ${point.atl.toLocaleString("es-ES")} · forma ${point.tsb.toLocaleString("es-ES")}.</p>
+    <p class="quiet">${esc(load.formNote)}</p>
+    <div class="section"><h2>Hacia tus objetivos</h2></div>
     <section class="card">${goalBars}</section>
-    <div class="section-head"><h2>Horas por semana y deporte</h2></div>
+    <div class="section"><h2>Horas por semana y deporte</h2></div>
     <section class="card">${stackedColumns(weeklyHours.labels, weeklyHours.series)}</section>
     <div class="grid-2">
-      <section class="card">
-        <h2>Por disciplina</h2>
-        ${disciplineBars(distribution.byDiscipline)}
-      </section>
-      <section class="card">
-        <h2>Por día</h2>
-        ${dayColumns(distribution.byDay)}
-      </section>
+      <section class="card"><h2>Por disciplina</h2>${disciplineBars(distribution.byDiscipline)}</section>
+      <section class="card"><h2>Por día</h2>${dayColumns(distribution.byDay)}</section>
     </div>
-    <aside class="callout warn"><strong>${esc(distribution.warning.title)}</strong> ${esc(distribution.warning.text)}</aside>
-    <div class="section-head"><h2>Mejores marcas recientes</h2></div>
-    <ul class="records">${recordList}</ul>`;
+    <aside class="card"><strong>${esc(distribution.warning.title)}</strong> <span class="quiet">${esc(distribution.warning.text)}</span></aside>
+    <div class="section"><h2>Mejores marcas recientes</h2></div>
+    <ul class="list">${recordList}</ul>`;
 }
 
 function renderNutricion() {
@@ -566,93 +616,83 @@ function renderNutricion() {
     if (!last || last.moment !== item.moment) groups.push({ moment: item.moment, items: [item] });
     else last.items.push(item);
   });
-  const moments = groups.map((group) => `<li class="moment">
-    <h3>${esc(group.moment)}</h3>
-    ${group.items.map((item) => `<p class="dose"><strong>${esc(item.name)}</strong> · ${esc(item.dose)}</p><p class="why">${esc(item.why)}</p>`).join("")}
-  </li>`).join("");
-  const menuCards = Object.entries(menus).map(([, menu]) => {
+  const moments = groups.map((group) => `<li class="moment"><h3>${esc(group.moment)}</h3>${group.items.map((item) => `<p class="dose"><strong>${esc(item.name)}</strong> · ${esc(item.dose)}</p><p class="why">${esc(item.why)}</p>`).join("")}</li>`).join("");
+  const menuCards = Object.values(menus).map((menu) => {
     const total = totals(menu.meals);
-    const lines = menu.meals.map((meal) =>
-      `<div class="menu-line"><strong>${esc(meal.time)} · ${esc(meal.name)}</strong><br>${esc(meal.food)}<br>${num(meal.kcal)} kcal · ${num(meal.p)} g prot. · ${num(meal.c)} g hidr. · ${num(meal.g)} g grasa${meal.supp && meal.supp !== "—" ? ` · ${esc(meal.supp)}` : ""}</div>`
-    ).join("");
-    return `<article class="menu-block">
-      <h3>${esc(menu.name)}</h3>
-      <p class="why">${num(total.kcal)} kcal · ${num(total.p)} g prot. · ${num(total.c)} g hidr. · ${num(total.g)} g grasa</p>
-      ${lines}
-    </article>`;
+    const lines = menu.meals.map((meal) => `<div class="menu-line"><strong>${esc(meal.time)} · ${esc(meal.name)}</strong><br>${esc(meal.food)}<br>${num(meal.kcal)} kcal · ${num(meal.p)} g prot. · ${num(meal.c)} g hidr. · ${num(meal.g)} g grasa${meal.supp && meal.supp !== "—" ? ` · ${esc(meal.supp)}` : ""}</div>`).join("");
+    return `<article class="menu-block"><h3>${esc(menu.name)}</h3><p class="why">${num(total.kcal)} kcal · ${num(total.p)} g prot.</p>${lines}</article>`;
   }).join("");
-  const targets = nutrition.targets.map((item) =>
-    `<div class="prop"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`
-  ).join("");
-  return `<div class="section-head"><h2 id="panel-title">Nutrición y suplementos</h2></div>
-    <p class="lede">Suplementación por momento del día y las cuatro plantillas de menú de esta semana.</p>
-    <div class="section-head"><h2>Suplementación diaria</h2></div>
-    <ul class="moments">${moments}</ul>
-    <p class="note">${esc(nutrition.supplementNote)}</p>
-    <div class="section-head"><h2>Menús tipo</h2></div>
-    <div class="stack">${menuCards}</div>
-    <section class="card">
-      <h2>Objetivos diarios</h2>
-      <div class="props">${targets}</div>
-    </section>
-    <p class="note">${esc(nutrition.macrosNote)}</p>`;
+  const targets = nutrition.targets.map((item) => `<div class="prop"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`).join("");
+  return `<div class="section"><h2 id="panel-title">Nutrición y suplementos</h2></div>
+    <div class="section"><h2>Suplementación diaria</h2></div>
+    <ul class="list">${moments}</ul>
+    <p class="quiet">${esc(nutrition.supplementNote)}</p>
+    <div class="section"><h2>Menús tipo</h2></div>
+    <div class="stack card">${menuCards}</div>
+    <section class="card"><h2>Objetivos diarios</h2><div class="props">${targets}</div></section>
+    <p class="quiet">${esc(nutrition.macrosNote)}</p>`;
 }
 
 function renderNotas() {
-  const { phase, week, risks, nextSteps } = state.data;
-  const pct = phase.daysTotal ? Math.max(0, Math.min(100, Math.round((phase.dayNumber / phase.daysTotal) * 100))) : 0;
+  const { phase, week, risks, nextSteps, zonas } = state.data;
+  const pct = phase.daysTotal ? Math.round((phase.dayNumber / phase.daysTotal) * 100) : 0;
+  const zoneRows = zonas.tabla.map((row) => `<tr><td>${esc(row.zona)}</td><td>${esc(row.fc)}</td></tr>`).join("");
   const riskList = risks.map((risk) => {
-    const tone = risk.tone === "danger" ? "danger" : risk.tone === "warning" ? "warn" : "neutral";
-    const badge = risk.badge ? `<span class="badge ${tone === "warn" ? "warn" : tone === "danger" ? "danger" : "neutral"}">${esc(risk.badge)}</span>` : "";
-    return `<li class="risk ${tone}"><div class="risk-top"><h3>${esc(risk.title)}</h3>${badge}</div><p>${esc(risk.detail)}</p></li>`;
+    const tone = risk.tone === "danger" ? "danger" : risk.tone === "warning" ? "warn" : "";
+    const badge = risk.badge ? `<span class="badge ${tone}">${esc(risk.badge)}</span>` : "";
+    return `<li class="risk"><div class="risk-top"><h3>${esc(risk.title)}</h3>${badge}</div><p>${esc(risk.detail)}</p></li>`;
   }).join("");
-  const steps = nextSteps.map((step, index) =>
-    `<li class="step"><span class="step-n">${index + 1}</span><div><h3>${esc(step.title)}</h3><p>${esc(step.detail)}</p></div></li>`
-  ).join("");
-  return `<div class="section-head"><h2 id="panel-title">${esc(phase.name)}</h2></div>
+  const steps = nextSteps.map((step, index) => `<li class="step"><span class="step-n">${index + 1}</span><div><h3>${esc(step.title)}</h3><p>${esc(step.detail)}</p></div></li>`).join("");
+  return `<div class="section"><h2 id="panel-title">${esc(phase.name)}</h2></div>
     <p class="lede">${esc(week.summary)}</p>
-    <section class="card phase-card">
-      <p class="eyebrow">${esc(phase.fullName)}</p>
-      <p class="range">${esc(phase.startLabel)}–${esc(phase.endLabel)}</p>
-      <p class="week-of">Semana ${esc(phase.weekNumber)} de ${esc(phase.weeksTotal)} · día ${esc(phase.dayNumber)} de ${esc(phase.daysTotal)}</p>
-      <div class="track" role="img" aria-label="Avance de la fase ${pct}%"><div class="fill" style="width:${pct}%;background:#A855F7"></div></div>
+    <section class="card">
+      <p class="phase-range">${esc(phase.startLabel)}–${esc(phase.endLabel)}</p>
+      <p class="quiet">Semana ${esc(phase.weekNumber)} de ${esc(phase.weeksTotal)} · día ${esc(phase.dayNumber)} de ${esc(phase.daysTotal)}</p>
+      <div class="track" style="margin-top:12px"><div class="fill" style="width:${pct}%"></div></div>
     </section>
-    <div class="section-head"><h2>Puntos de atención</h2></div>
-    <ul class="risks">${riskList}</ul>
-    <div class="section-head"><h2>Próximos pasos</h2></div>
-    <ol class="steps">${steps}</ol>
-    <p class="note install-hint">Para dejarlo en la pantalla de inicio del móvil: en iPhone, Compartir y luego «Añadir a pantalla de inicio»; en Android, el menú del navegador y «Instalar app» o «Añadir a pantalla de inicio».</p>`;
+    <div class="section"><h2>Zonas de frecuencia</h2></div>
+    <section class="card">
+      <p class="quiet">${esc(zonas.nota)}</p>
+      <table class="zones"><thead><tr><th>Zona</th><th>FC</th></tr></thead><tbody>${zoneRows}</tbody></table>
+    </section>
+    <div class="section"><h2>Puntos de atención</h2></div>
+    <ul class="list">${riskList}</ul>
+    <div class="section"><h2>Próximos pasos</h2></div>
+    <ol class="list">${steps}</ol>
+    <p class="quiet">Para dejarlo en la pantalla de inicio: en el iPhone, Compartir → Añadir a pantalla de inicio; en Android, el menú del navegador → Instalar app.</p>`;
 }
 
 function renderPanel() {
+  if (state.tab === "hoy") return renderHoy();
   if (state.tab === "semana") return renderSemana();
   if (state.tab === "progreso") return renderProgreso();
   if (state.tab === "nutricion") return renderNutricion();
   if (state.tab === "notas") return renderNotas();
-  return renderHoy();
+  return renderInicio();
 }
 
-function render() {
+function render(options = {}) {
   const root = document.querySelector("#app");
+  const keep = options.keepScroll ? window.scrollY : 0;
   try {
     const { week, phase } = state.data;
     document.title = `Plan de Alex · ${week.label}`;
     const tabs = TABS.map((tab) => {
       const on = tab.id === state.tab;
-      const sub = tab.sub ? `<span class="sub">${esc(tab.sub)}</span>` : "";
-      return `<button type="button" class="tab${on ? " is-active" : ""}" data-tab="${tab.id}" role="tab" aria-selected="${on}" aria-label="${esc(tab.aria || tab.label)}">
-        ${icon(tab.icon)}
-        <span class="tab-label">${esc(tab.label)}${sub}</span>
-      </button>`;
+      return `<button type="button" class="tab${on ? " is-active" : ""}" data-tab="${tab.id}" role="tab" aria-selected="${on}" aria-label="${esc(tab.aria || tab.label)}">${icon(tab.icon)}<span>${esc(tab.label)}</span></button>`;
     }).join("");
     root.innerHTML = `<header class="top"><div class="top-inner">
-        <p class="brand"><span class="logo" aria-hidden="true">A</span> Plan de Alex</p>
+        <p class="brand"><i></i> Plan de Alex</p>
         <h1>${esc(week.label)}</h1>
-        <p class="phase-pill"><i></i>${esc(phase.name)} · ${esc(phase.startLabel)}–${esc(phase.endLabel)}</p>
+        <p class="phase">${esc(phase.name)} · ${esc(phase.startLabel)}–${esc(phase.endLabel)}</p>
       </div></header>
       <nav class="tabbar" aria-label="Secciones">${tabs}</nav>
       <main class="main" id="contenido" role="tabpanel">${renderPanel()}</main>`;
     syncHash();
+    const scroller = document.querySelector(".day-select");
+    const chip = scroller?.querySelector(".day-chip.is-on");
+    if (scroller && chip) scroller.scrollLeft = Math.max(0, chip.offsetLeft - 16);
+    if (options.keepScroll) window.scrollTo(0, keep);
   } catch (err) {
     root.innerHTML = `<p class="error">No se ha podido mostrar el plan. Revisa data/semana-actual.json.</p><pre class="error-detail">${esc(err.message)}</pre>`;
     console.error(err);
@@ -679,6 +719,12 @@ async function boot() {
 
 document.addEventListener("click", (event) => {
   if (!state.data) return;
+  const check = event.target.closest("[data-check]");
+  if (check) {
+    toggleCheck(check.dataset.check);
+    render({ keepScroll: true });
+    return;
+  }
   const tab = event.target.closest("[data-tab]");
   if (tab && TABS.some((item) => item.id === tab.dataset.tab)) {
     state.tab = tab.dataset.tab;

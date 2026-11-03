@@ -4,7 +4,7 @@ const data = JSON.parse(readFileSync(new URL("../data/semana-actual.json", impor
 const errors = [];
 const fail = (message) => errors.push(message);
 
-if (data.schemaVersion !== 1) fail("schemaVersion debe ser 1");
+if (data.schemaVersion !== 2) fail("schemaVersion debe ser 2");
 
 const dayIds = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"];
 if (data.days.length !== 7) fail("hacen falta 7 días");
@@ -13,8 +13,23 @@ data.days.forEach((day, index) => {
   if (!data.menus[day.menu]) fail(`menú ${day.menu} no existe`);
   if (!day.sessions?.length) fail(`${day.id} sin sesiones`);
   day.sessions.forEach((session) => {
-    for (const key of ["tag", "title", "detail"]) {
-      if (!session[key]) fail(`${day.id} sesión sin ${key}`);
+    for (const key of ["id", "deporte", "tag", "title", "bloques", "ejercicios", "llevar"]) {
+      if (session[key] == null) fail(`${day.id} sesión sin ${key}`);
+    }
+    if (!Array.isArray(session.bloques)) fail(`${session.id} bloques no es lista`);
+    session.bloques.forEach((block) => {
+      if (!block.nombre) fail(`${session.id} bloque sin nombre`);
+    });
+    session.ejercicios.forEach((group) => {
+      group.items.forEach((item) => {
+        for (const key of ["id", "nombre", "series", "reps"]) {
+          if (item[key] == null || item[key] === "") fail(`${session.id} ${item.id || "ejercicio"} sin ${key}`);
+        }
+      });
+    });
+    if (session.deporte === "natacion") {
+      const sum = session.bloques.reduce((total, block) => total + (block.metros || 0), 0);
+      if (sum !== session.metros) fail(`${session.id} suma ${sum} m y declara ${session.metros}`);
     }
   });
 });
@@ -55,8 +70,9 @@ data.weeklyHours.series.forEach((series) => {
 if (data.distribution.byDiscipline.length !== 4 || data.distribution.byDay.length !== 7) {
   fail("distribución de horas incompleta");
 }
-if (!data.distribution.byDiscipline.some((row) => row.emphasis)) fail("falta el énfasis de disciplina");
-if (!data.distribution.byDay.some((row) => row.emphasis)) fail("falta el énfasis del día");
+if (!data.zonas || data.zonas.tabla.length !== 5) fail("faltan las 5 zonas");
+if (!data.week.alerta) fail("falta la alerta de la semana");
+if (data.week.piscinaM !== 20) fail("la piscina es de 20 m");
 
 const required = [
   "Estimación mía con la FC",
@@ -73,8 +89,20 @@ const blob = JSON.stringify(data);
 for (const text of required) {
   if (!blob.includes(text)) fail(`falta el texto: ${text}`);
 }
-const drills = data.days.find((day) => day.id === "mar").sessions[1].detail;
-if (!drills.includes('20" de descanso')) fail("falta el detalle de la natación del martes");
+const swim = data.days.find((day) => day.id === "mar").sessions.find((session) => session.id === "mar-natacion");
+const tech = swim.bloques.find((block) => block.nombre === "Técnica");
+if (!tech || tech.descanso !== '20"' || !String(tech.descripcion).includes("brazada con pausa adelante")) {
+  fail("falta la técnica del martes");
+}
+if (swim.metros !== 1020 || swim.bloques.find((block) => block.nombre === "Principal").metros !== 400) {
+  fail("metros del martes");
+}
+const plan = data.days.flatMap((day) => day.sessions).filter((session) => session.cuentaEnPlan);
+const planMin = plan.reduce((total, session) => total + (session.duracionMin || 0), 0);
+const doneMin = plan.filter((session) => session.completado).reduce((total, session) => total + (session.duracionMin || 0), 0);
+if (planMin !== 430 || doneMin !== 120) fail(`minutos plan ${planMin} hechos ${doneMin}`);
+if (data.goals.find((goal) => goal.name === "Natación esta semana").target !== 3380) fail("objetivo de natación");
+if (data.goals.find((goal) => goal.name === "Horas esta semana").target !== 430) fail("objetivo de horas");
 
 if (data.week.start !== "2026-11-02" || data.week.end !== "2026-11-08") fail("rango de la semana");
 if (data.phase.start !== "2026-11-02" || data.phase.end !== "2027-01-10") fail("rango de la fase");

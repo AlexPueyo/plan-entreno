@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "week": {
     "number": 1,
     "label": "Semana 1 · 2–8 nov",
@@ -10,7 +10,9 @@
     "calendarEndHour": 23,
     "calendarCaption": "Clases del Google Calendar marcadas. Trabajo propuesto de 7:00 a 15:00.",
     "referenceToday": "2026-11-03",
-    "referenceNowHour": 14.2
+    "referenceNowHour": 14.2,
+    "alerta": "Mantén la bici en Z2.",
+    "piscinaM": 20
   },
   "phase": {
     "id": "fase-1",
@@ -288,25 +290,25 @@
     {
       "name": "Carrera esta semana",
       "now": 0,
-      "target": 11,
-      "nowLabel": "0 km",
-      "targetLabel": "11 km plan",
+      "target": 70,
+      "nowLabel": "0 min",
+      "targetLabel": "70 min plan",
       "color": 1
     },
     {
       "name": "Natación esta semana",
       "now": 0,
-      "target": 2500,
+      "target": 3380,
       "nowLabel": "0 m",
-      "targetLabel": "2.500 m plan",
+      "targetLabel": "3.380 m plan",
       "color": 2
     },
     {
       "name": "Horas esta semana",
-      "now": 2,
-      "target": 6.8,
+      "now": 120,
+      "target": 430,
       "nowLabel": "2:00 h",
-      "targetLabel": "6,8 h plan",
+      "targetLabel": "7:10 h plan",
       "color": 3
     }
   ],
@@ -337,7 +339,7 @@
         "values": [
           0,
           0.21,
-          1.08
+          1.17
         ]
       },
       {
@@ -368,7 +370,7 @@
       {
         "label": "Natación",
         "hours": 1.5,
-        "display": "1:00–1:30"
+        "display": "1:30"
       },
       {
         "label": "Fuerza",
@@ -377,9 +379,8 @@
       },
       {
         "label": "Carrera",
-        "hours": 1.08,
-        "display": "1:05",
-        "emphasis": true
+        "hours": 1.17,
+        "display": "1:10"
       }
     ],
     "byDay": [
@@ -398,8 +399,8 @@
       {
         "id": "mie",
         "label": "X",
-        "hours": 0.58,
-        "display": "0:35"
+        "hours": 0.67,
+        "display": "0:40"
       },
       {
         "id": "jue",
@@ -410,15 +411,14 @@
       {
         "id": "vie",
         "label": "V",
-        "hours": 0.25,
-        "display": "0:15"
+        "hours": 0,
+        "display": "descanso"
       },
       {
         "id": "sab",
         "label": "S",
         "hours": 1.75,
-        "display": "1:45",
-        "emphasis": true
+        "display": "1:45"
       },
       {
         "id": "dom",
@@ -777,14 +777,45 @@
       "label": "Lun 2",
       "work": "7:00–15:00",
       "classes": "18:00–20:00 Economía o Finanzas Corporativas I (se solapan)",
-      "focus": "Bici intensa",
+      "focus": "Bici",
       "menu": "c18",
       "sessions": [
         {
-          "tag": "Hecho",
-          "title": "Bici por la tarde, 44 km",
-          "detail": "1:25 · 31,0 km/h · FC media 165 ppm · 230 m de desnivel",
-          "done": true
+          "id": "lun-bici",
+          "deporte": "bici",
+          "tag": "Completado",
+          "title": "Bici",
+          "hora": null,
+          "completado": true,
+          "opcional": false,
+          "cuentaEnPlan": true,
+          "duracionMin": 85,
+          "duracion": "1:25",
+          "distancia": "~40 km",
+          "metros": null,
+          "largos": null,
+          "objetivo": "~31 km/h · FC media 165",
+          "nota": "FC media 165 ppm: demasiado intensa para base.",
+          "llevar": [],
+          "nutricion_durante": null,
+          "bloques": [
+            {
+              "nombre": "Salida",
+              "duracion": "1:25",
+              "duracionMin": 85,
+              "distancia": "~40 km",
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": {
+                "zona": "Z4",
+                "fc": "165 ppm de media",
+                "texto": "Demasiado intensa para base"
+              },
+              "descripcion": "~40 km a ~31 km/h. FC media 165 ppm."
+            }
+          ],
+          "ejercicios": []
         }
       ],
       "date": "2026-11-02"
@@ -798,15 +829,191 @@
       "menu": "c20",
       "sessions": [
         {
-          "tag": "Hecho",
-          "title": "Fuerza a mediodía",
-          "detail": "35' · FC media 85 ppm",
-          "done": true
+          "id": "mar-fuerza",
+          "deporte": "fuerza",
+          "tag": "Completado",
+          "title": "Fuerza",
+          "hora": null,
+          "completado": true,
+          "opcional": false,
+          "cuentaEnPlan": true,
+          "duracionMin": 35,
+          "duracion": "35'",
+          "distancia": null,
+          "metros": null,
+          "largos": null,
+          "objetivo": "RIR 2",
+          "nota": null,
+          "llevar": [],
+          "nutricion_durante": null,
+          "bloques": [
+            {
+              "nombre": "Calentamiento",
+              "duracion": "5'",
+              "duracionMin": 5,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Remo suave + movilidad de cadera y hombro."
+            }
+          ],
+          "ejercicios": [
+            {
+              "grupo": "A",
+              "items": [
+                {
+                  "id": "A1",
+                  "nombre": "Sentadilla goblet",
+                  "series": 3,
+                  "reps": "10",
+                  "descanso": "90\"",
+                  "rir": "2",
+                  "notas": null
+                },
+                {
+                  "id": "A2",
+                  "nombre": "Remo en polea baja",
+                  "series": 3,
+                  "reps": "12",
+                  "descanso": null,
+                  "rir": null,
+                  "notas": null
+                }
+              ]
+            },
+            {
+              "grupo": "B",
+              "items": [
+                {
+                  "id": "B1",
+                  "nombre": "Press militar mancuernas",
+                  "series": 3,
+                  "reps": "10",
+                  "descanso": null,
+                  "rir": null,
+                  "notas": null
+                },
+                {
+                  "id": "B2",
+                  "nombre": "Hip thrust",
+                  "series": 3,
+                  "reps": "12",
+                  "descanso": null,
+                  "rir": null,
+                  "notas": null
+                }
+              ]
+            },
+            {
+              "grupo": "C",
+              "items": [
+                {
+                  "id": "C",
+                  "nombre": "Plancha frontal",
+                  "series": 3,
+                  "reps": "30\"",
+                  "descanso": null,
+                  "rir": null,
+                  "notas": null
+                }
+              ]
+            }
+          ]
         },
         {
-          "tag": "Drills",
-          "title": "Natación técnica (opcional) · 17:00",
-          "detail": "30' · 200 suave, 6×50 técnica (tabla y pillar), 6×50 crol fácil con 20\" de descanso, 100 suave · 10' de sauna"
+          "id": "mar-natacion",
+          "deporte": "natacion",
+          "tag": "Opcional",
+          "title": "Natación técnica",
+          "hora": "17:00",
+          "completado": false,
+          "opcional": true,
+          "cuentaEnPlan": true,
+          "duracionMin": 30,
+          "duracion": "30'",
+          "distancia": null,
+          "metros": 1020,
+          "largos": 51,
+          "objetivo": "Z2",
+          "nota": null,
+          "llevar": [
+            "bañador",
+            "gafas",
+            "gorro",
+            "chanclas",
+            "toalla",
+            "pull buoy/tabla",
+            "botella 500 ml"
+          ],
+          "nutricion_durante": null,
+          "bloques": [
+            {
+              "nombre": "Calentamiento",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "200 m",
+              "metros": 200,
+              "largos": "10 largos",
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Suave, variando estilos."
+            },
+            {
+              "nombre": "Técnica",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "6×40 m",
+              "metros": 240,
+              "largos": "2 largos",
+              "descanso": "20\"",
+              "intensidad": null,
+              "descripcion": "Alternando «brazada con pausa adelante» y «patada lateral con aletas o tabla»."
+            },
+            {
+              "nombre": "Principal",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "4×100 m",
+              "metros": 400,
+              "largos": "5 largos",
+              "descanso": "30\"",
+              "intensidad": {
+                "zona": "Z2",
+                "fc": "135–150 ppm",
+                "texto": null
+              },
+              "descripcion": ""
+            },
+            {
+              "nombre": "Vivo",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "4×20 m",
+              "metros": 80,
+              "largos": "1 largo",
+              "descanso": "30\"",
+              "intensidad": {
+                "zona": null,
+                "fc": null,
+                "texto": "Vivo"
+              },
+              "descripcion": ""
+            },
+            {
+              "nombre": "Vuelta a la calma",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "100 m",
+              "metros": 100,
+              "largos": "5 largos",
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Suave."
+            }
+          ],
+          "ejercicios": []
         }
       ],
       "date": "2026-11-03"
@@ -816,13 +1023,97 @@
       "label": "Mié 4",
       "work": "7:00–15:00",
       "classes": "20:00–22:00 Finanzas Corporativas I",
-      "focus": "Carrera Z2",
+      "focus": "Carrera suave",
       "menu": "c20",
       "sessions": [
         {
+          "id": "mie-carrera",
+          "deporte": "carrera",
           "tag": "Z2",
-          "title": "Carrera suave · 15:45",
-          "detail": "35' · 5,5–6 km a 5:50–6:15/km · FC 135–150 ppm; si pasas de 150, baja o camina"
+          "title": "Carrera suave",
+          "hora": "15:45",
+          "completado": false,
+          "opcional": false,
+          "cuentaEnPlan": true,
+          "duracionMin": 40,
+          "duracion": "40'",
+          "distancia": null,
+          "metros": null,
+          "largos": null,
+          "objetivo": "Z2 135–150",
+          "nota": null,
+          "llevar": [
+            "zapatillas",
+            "pulsómetro/banda",
+            "500 ml agua"
+          ],
+          "nutricion_durante": null,
+          "bloques": [
+            {
+              "nombre": "Calentamiento",
+              "duracion": "8'",
+              "duracionMin": 8,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": {
+                "zona": "Z1",
+                "fc": "<135 ppm",
+                "texto": null
+              },
+              "descripcion": "Trote muy suave."
+            },
+            {
+              "nombre": "Movilidad",
+              "duracion": "3'",
+              "duracionMin": 3,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Movilidad dinámica: balanceos de pierna, skipping suave."
+            },
+            {
+              "nombre": "Principal",
+              "duracion": "20'",
+              "duracionMin": 20,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": {
+                "zona": "Z2",
+                "fc": "135–150 ppm",
+                "texto": "Ritmo de poder hablar"
+              },
+              "descripcion": ""
+            },
+            {
+              "nombre": "Vuelta a la calma",
+              "duracion": "4'",
+              "duracionMin": 4,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Andando o trote."
+            },
+            {
+              "nombre": "Estiramientos",
+              "duracion": "5'",
+              "duracionMin": 5,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Gemelo, sóleo, isquio y cuádriceps."
+            }
+          ],
+          "ejercicios": []
         }
       ],
       "date": "2026-11-04"
@@ -832,21 +1123,233 @@
       "label": "Jue 5",
       "work": "7:00–15:00",
       "classes": "18:00–20:00 Fundamentos de Marketing",
-      "focus": "Doble: fuerza + natación",
+      "focus": "Doble desde 15:30",
       "menu": "c18",
       "sessions": [
         {
+          "id": "jue-fuerza",
+          "deporte": "fuerza",
           "tag": "Gym",
-          "title": "Fuerza general · 15:30",
-          "detail": "45' · goblet o búlgara, peso muerto rumano, remo, press inclinado, gemelo y plancha · 3×8–10 con 2 en reserva"
+          "title": "Fuerza",
+          "hora": "15:30",
+          "completado": false,
+          "opcional": false,
+          "cuentaEnPlan": true,
+          "duracionMin": 45,
+          "duracion": "45'",
+          "distancia": null,
+          "metros": null,
+          "largos": null,
+          "objetivo": "RIR 2",
+          "nota": null,
+          "llevar": [],
+          "nutricion_durante": null,
+          "bloques": [
+            {
+              "nombre": "Calentamiento",
+              "duracion": "6'",
+              "duracionMin": 6,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": {
+                "zona": "Z1",
+                "fc": "<135 ppm",
+                "texto": null
+              },
+              "descripcion": "Bici estática + movilidad."
+            },
+            {
+          "nombre": "Vuelta a la calma",
+          "duracion": "3'",
+          "duracionMin": 3,
+          "distancia": null,
+          "metros": null,
+          "largos": null,
+          "descanso": null,
+          "intensidad": null,
+          "descripcion": "Estiramientos.",
+          "fase": "despues"
+            }
+          ],
+          "ejercicios": [
+            {
+              "grupo": "A",
+              "items": [
+                {
+                  "id": "A1",
+                  "nombre": "Sentadilla goblet o con barra",
+                  "series": 3,
+                  "reps": "8",
+                  "descanso": "2'",
+                  "rir": "2",
+                  "notas": null
+                },
+                {
+                  "id": "A2",
+                  "nombre": "Plancha lateral",
+                  "series": 3,
+                  "reps": "30\"/lado",
+                  "descanso": null,
+                  "rir": null,
+                  "notas": null
+                }
+              ]
+            },
+            {
+              "grupo": "B",
+              "items": [
+                {
+                  "id": "B1",
+                  "nombre": "Peso muerto rumano mancuernas",
+                  "series": 3,
+                  "reps": "10",
+                  "descanso": "90\"",
+                  "rir": null,
+                  "notas": null
+                },
+                {
+                  "id": "B2",
+                  "nombre": "Remo con mancuerna",
+                  "series": 3,
+                  "reps": "10/brazo",
+                  "descanso": null,
+                  "rir": null,
+                  "notas": null
+                }
+              ]
+            },
+            {
+              "grupo": "C",
+              "items": [
+                {
+                  "id": "C1",
+                  "nombre": "Zancada búlgara",
+                  "series": 3,
+                  "reps": "8/pierna",
+                  "descanso": null,
+                  "rir": null,
+                  "notas": null
+                },
+                {
+                  "id": "C2",
+                  "nombre": "Press banca mancuernas",
+                  "series": 3,
+                  "reps": "10",
+                  "descanso": null,
+                  "rir": null,
+                  "notas": null
+                }
+              ]
+            },
+            {
+              "grupo": "D",
+              "items": [
+                {
+                  "id": "D1",
+                  "nombre": "Elevación de gemelos a una pierna",
+                  "series": 3,
+                  "reps": "12/pierna",
+                  "descanso": null,
+                  "rir": null,
+                  "notas": null
+                },
+                {
+                  "id": "D2",
+                  "nombre": "Pallof press",
+                  "series": 3,
+                  "reps": "10/lado",
+                  "descanso": null,
+                  "rir": null,
+                  "notas": null
+                }
+              ]
+            }
+          ]
         },
         {
-          "tag": "Drills",
-          "title": "Natación · 16:20",
-          "detail": "30' · 300 suave, 8×25 técnica, 4×100 cómodo"
+          "id": "jue-natacion",
+          "deporte": "natacion",
+          "tag": "Swim",
+          "title": "Natación",
+          "hora": null,
+          "completado": false,
+          "opcional": false,
+          "cuentaEnPlan": true,
+          "duracionMin": 30,
+          "duracion": "30'",
+          "distancia": null,
+          "metros": 1220,
+          "largos": 61,
+          "objetivo": "Z2",
+          "nota": null,
+          "llevar": [],
+          "nutricion_durante": null,
+          "bloques": [
+            {
+              "nombre": "Calentamiento",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "200 m",
+              "metros": 200,
+              "largos": "10 largos",
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Suave."
+            },
+            {
+              "nombre": "Técnica",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "8×40 m",
+              "metros": 320,
+              "largos": "2 largos",
+              "descanso": "20\"",
+              "intensidad": null,
+              "descripcion": "Pull buoy o respiración cada 3."
+            },
+            {
+              "nombre": "Principal",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "3×200 m",
+              "metros": 600,
+              "largos": "10 largos",
+              "descanso": "30\"",
+              "intensidad": {
+                "zona": "Z2",
+                "fc": "135–150 ppm",
+                "texto": null
+              },
+              "descripcion": ""
+            },
+            {
+              "nombre": "Vuelta a la calma",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "100 m",
+              "metros": 100,
+              "largos": "5 largos",
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": ""
+            }
+          ],
+          "ejercicios": []
         }
       ],
-      "date": "2026-11-05"
+      "date": "2026-11-05",
+      "llevar": [
+        "bañador",
+        "gafas",
+        "gorro",
+        "chanclas",
+        "toalla",
+        "pull buoy/tabla",
+        "botella 500 ml",
+        "batido de proteína para después"
+      ]
     },
     {
       "id": "vie",
@@ -858,9 +1361,48 @@
       "note": "Día de descanso: quita el batido de whey de la recuperación y la ración de arroz baja a 60 g.",
       "sessions": [
         {
+          "id": "vie-descanso",
+          "deporte": "descanso",
           "tag": "Descanso",
-          "title": "Descanso activo",
-          "detail": "Movilidad 15' y sauna opcional 10–15' con electrolitos"
+          "title": "Descanso",
+          "hora": null,
+          "completado": false,
+          "opcional": true,
+          "cuentaEnPlan": false,
+          "duracionMin": null,
+          "duracion": "15' + sauna 10–15'",
+          "distancia": null,
+          "metros": null,
+          "largos": null,
+          "objetivo": "Movilidad suave",
+          "nota": "Día de descanso.",
+          "llevar": [],
+          "nutricion_durante": null,
+          "bloques": [
+            {
+              "nombre": "Movilidad",
+              "duracion": "15'",
+              "duracionMin": 15,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Opcional. Movilidad suave."
+            },
+            {
+              "nombre": "Sauna",
+              "duracion": "10–15'",
+              "duracionMin": null,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Opcional, con hidratación."
+            }
+          ],
+          "ejercicios": []
         }
       ],
       "date": "2026-11-06"
@@ -874,9 +1416,81 @@
       "menu": "sab",
       "sessions": [
         {
+          "id": "sab-bici",
+          "deporte": "bici",
           "tag": "Z2",
-          "title": "Bici larga suave · 9:30",
-          "detail": "1:45 · unos 50 km · FC media por debajo de 145 ppm, sin perseguir segmentos; con el grupo, a rueda"
+          "title": "Bici larga",
+          "hora": null,
+          "completado": false,
+          "opcional": false,
+          "cuentaEnPlan": true,
+          "duracionMin": 105,
+          "duracion": "1:45",
+          "distancia": null,
+          "metros": null,
+          "largos": null,
+          "objetivo": "Z2 135–150",
+          "nota": null,
+          "llevar": [
+            "casco",
+            "gafas",
+            "luces",
+            "cámara de repuesto",
+            "bombín/CO2",
+            "desmontables",
+            "móvil",
+            "DNI y tarjeta",
+            "cortavientos"
+          ],
+          "nutricion_durante": "1 bidón de 750 ml con electrolitos y 1 bidón de agua. 2 guayabas: una a los 40' y otra a los 80'.",
+          "bloques": [
+            {
+              "nombre": "Calentamiento",
+              "duracion": "15'",
+              "duracionMin": 15,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": {
+                "zona": "Z1→Z2",
+                "fc": null,
+                "texto": "Cadencia 85–95"
+              },
+              "descripcion": "Progresivo."
+            },
+            {
+              "nombre": "Principal",
+              "duracion": "80'",
+              "duracionMin": 80,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": {
+                "zona": "Z2",
+                "fc": "135–150 ppm",
+                "texto": "Sin pasar de 150 en las subidas: bajar marcha"
+              },
+              "descripcion": "Continuo."
+            },
+            {
+              "nombre": "Vuelta a la calma",
+              "duracion": "10'",
+              "duracionMin": 10,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": {
+                "zona": "Z1",
+                "fc": "<135 ppm",
+                "texto": "Muy suave"
+              },
+              "descripcion": ""
+            }
+          ],
+          "ejercicios": []
         }
       ],
       "date": "2026-11-07"
@@ -890,17 +1504,145 @@
       "menu": "dom",
       "sessions": [
         {
+          "id": "dom-natacion",
+          "deporte": "natacion",
           "tag": "Swim",
-          "title": "Natación continua · 10:30",
-          "detail": "30' · nado suave continuo, parando lo que necesites"
+          "title": "Natación",
+          "hora": null,
+          "completado": false,
+          "opcional": false,
+          "cuentaEnPlan": true,
+          "duracionMin": 30,
+          "duracion": "30'",
+          "distancia": null,
+          "metros": 1140,
+          "largos": 57,
+          "objetivo": "Z2",
+          "nota": null,
+          "llevar": [],
+          "nutricion_durante": null,
+          "bloques": [
+            {
+              "nombre": "Calentamiento",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "200 m",
+              "metros": 200,
+              "largos": "10 largos",
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": ""
+            },
+            {
+              "nombre": "Técnica",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "6×40 m",
+              "metros": 240,
+              "largos": "2 largos",
+              "descanso": "20\"",
+              "intensidad": null,
+              "descripcion": ""
+            },
+            {
+              "nombre": "Principal",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "6×100 m",
+              "metros": 600,
+              "largos": "5 largos",
+              "descanso": "20\"",
+              "intensidad": {
+                "zona": "Z2",
+                "fc": "135–150 ppm",
+                "texto": null
+              },
+              "descripcion": ""
+            },
+            {
+              "nombre": "Vuelta a la calma",
+              "duracion": null,
+              "duracionMin": null,
+              "distancia": "100 m",
+              "metros": 100,
+              "largos": "5 largos",
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": ""
+            }
+          ],
+          "ejercicios": []
         },
         {
+          "id": "dom-carrera",
+          "deporte": "carrera",
           "tag": "Z2",
-          "title": "Carrera suave · 11:15",
-          "detail": "30' · unos 5 km en Z2"
+          "title": "Carrera",
+          "hora": null,
+          "completado": false,
+          "opcional": false,
+          "cuentaEnPlan": true,
+          "duracionMin": 30,
+          "duracion": "30'",
+          "distancia": null,
+          "metros": null,
+          "largos": null,
+          "objetivo": "Z2 135–150",
+          "nota": null,
+          "llevar": [],
+          "nutricion_durante": null,
+          "bloques": [
+            {
+              "nombre": "Calentamiento",
+              "duracion": "8'",
+              "duracionMin": 8,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": {
+                "zona": "Z1",
+                "fc": "<135 ppm",
+                "texto": null
+              },
+              "descripcion": ""
+            },
+            {
+              "nombre": "Principal",
+              "duracion": "18'",
+              "duracionMin": 18,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": {
+                "zona": "Z2",
+                "fc": "135–150 ppm",
+                "texto": null
+              },
+              "descripcion": ""
+            },
+            {
+              "nombre": "Vuelta a la calma",
+              "duracion": "4'",
+              "duracionMin": 4,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Y estiramientos."
+            }
+          ],
+          "ejercicios": []
         }
       ],
-      "date": "2026-11-08"
+      "date": "2026-11-08",
+      "llevar": [
+        "material de natación",
+        "material de carrera",
+        "500 ml agua"
+      ]
     }
   ],
   "events": [
@@ -915,7 +1657,7 @@
       "date": "2026-11-02",
       "start": 16.25,
       "end": 17.75,
-      "title": "Bici 44 km (hecho)"
+      "title": "Bici ~40 km (hecho)"
     },
     {
       "date": "2026-11-02",
@@ -1057,5 +1799,31 @@
       "title": "Domingo: Strava y RestOrTrain de la semana",
       "detail": "Con eso actualizo los gráficos y preparo la semana 2"
     }
-  ]
+  ],
+  "zonas": {
+    "fcMax": 190,
+    "nota": "Provisional, FCmáx ~190.",
+    "tabla": [
+      {
+        "zona": "Z1",
+        "fc": "<135 ppm"
+      },
+      {
+        "zona": "Z2",
+        "fc": "135–150 ppm"
+      },
+      {
+        "zona": "Z3",
+        "fc": "150–163 ppm"
+      },
+      {
+        "zona": "Z4",
+        "fc": "163–175 ppm"
+      },
+      {
+        "zona": "Z5",
+        "fc": ">175 ppm"
+      }
+    ]
+  }
 }
