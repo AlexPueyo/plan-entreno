@@ -616,12 +616,14 @@ function renderSemana() {
   const cards = state.data.days.map((day) => `<button type="button" class="day-card${day.id === state.dayId ? " is-on" : ""}" data-day="${esc(day.id)}" data-goto="hoy">
     <header><strong>${esc(day.label)}</strong><span>${esc(hours[day.id] || "")}</span></header>
     <p class="meta">${esc(day.focus)}</p>
+    <p class="meta">Trabajo: ${esc(day.work)}</p>
+    <p class="meta">Clases: ${esc(day.classes)}</p>
     <ul>${day.sessions.map((session) => `<li><i class="dot ${esc(session.deporte)}"></i><span>${esc(session.title)} · ${esc(session.duracion || "")}${session.objetivo ? ` · ${esc(session.objetivo)}` : ""}</span></li>`).join("")}</ul>
   </button>`).join("");
   return `${daySelect()}
     <div class="section"><h2 id="panel-title">Calendario de la semana</h2></div>
     <p class="quiet">${esc(state.data.week.calendarCaption)}</p>
-    <section class="card">${renderCalendar()}</section>
+    <section class="card week-grid">${renderCalendar()}</section>
     <div class="section"><h2>Días</h2></div>
     <div class="day-cards">${cards}</div>`;
 }
@@ -635,8 +637,8 @@ function chartTicks(floor, ceiling, withZero) {
 
 function lineChart(points, series, floor, ceiling, hoy, options) {
   const W = 360;
-  const H = 200;
-  const pad = { l: 34, r: 10, t: 16, b: 26 };
+  const H = 220;
+  const pad = { l: 48, r: 8, t: 22, b: 32 };
   const iw = W - pad.l - pad.r;
   const ih = H - pad.t - pad.b;
   const n = points.length;
@@ -644,30 +646,34 @@ function lineChart(points, series, floor, ceiling, hoy, options) {
   const y = (value) => pad.t + ((ceiling - Math.min(ceiling, Math.max(floor, value))) / (ceiling - floor)) * ih;
   const grids = chartTicks(floor, ceiling, options.zeroLabel).map((tick) => {
     const yy = y(tick);
-    return `<line x1="${pad.l}" y1="${yy.toFixed(1)}" x2="${W - pad.r}" y2="${yy.toFixed(1)}" stroke="var(--line)"/>
-      <text x="${pad.l - 6}" y="${(yy + 3).toFixed(1)}" text-anchor="end" fill="var(--faint)" font-size="10">${esc(num(tick))}</text>`;
+      return `<line x1="${pad.l}" y1="${yy.toFixed(1)}" x2="${W - pad.r}" y2="${yy.toFixed(1)}" stroke="var(--line)"/>
+      <text x="${pad.l - 6}" y="${(yy + 4).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="13">${esc(num(tick))}</text>`;
   }).join("");
   const lines = series.map((item) => {
     const d = points.map((point, index) => `${index ? "L" : "M"}${x(index).toFixed(1)},${y(point[item.key]).toFixed(1)}`).join("");
     return `<path d="${d}" fill="none" stroke="${item.color}" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/>
       <circle cx="${x(hoy).toFixed(1)}" cy="${y(points[hoy][item.key]).toFixed(1)}" r="2.6" fill="${item.color}"/>`;
   }).join("");
-  const labels = points.map((point, index) => point.label
-    ? `<text x="${x(index).toFixed(1)}" y="${H - 6}" text-anchor="middle" fill="var(--faint)" font-size="10">${esc(point.label)}</text>` : "").join("");
+  const labels = points.map((point, index) => {
+    if (!point.label) return "";
+    const edge = index === 0 ? "start" : index === n - 1 ? "end" : "middle";
+    const xx = index === 0 ? pad.l : index === n - 1 ? W - 2 : x(index);
+    return `<text x="${xx.toFixed(1)}" y="${H - 8}" text-anchor="${edge}" fill="var(--muted)" font-size="13">${esc(point.label)}</text>`;
+  }).join("");
   const hx = x(hoy);
   const marker = `<line x1="${hx.toFixed(1)}" y1="${pad.t}" x2="${hx.toFixed(1)}" y2="${(pad.t + ih).toFixed(1)}" stroke="var(--accent)" stroke-dasharray="2 3"/>
-    <text x="${Math.max(pad.l + 12, Math.min(hx, W - 28)).toFixed(1)}" y="11" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="700">${esc(options.hoyLabel || "hoy")}</text>`;
+    <text x="${Math.max(pad.l + 16, Math.min(hx, W - 36)).toFixed(1)}" y="14" text-anchor="middle" fill="var(--accent)" font-size="13" font-weight="700">${esc(options.hoyLabel || "hoy")}</text>`;
   const zero = options.zeroLabel && floor < 0 && ceiling > 0
     ? `<line x1="${pad.l}" y1="${y(0).toFixed(1)}" x2="${W - pad.r}" y2="${y(0).toFixed(1)}" stroke="var(--faint)" stroke-dasharray="3 3"/>
-      <text x="${W - pad.r}" y="${(y(0) - 4).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="10">${esc(options.zeroLabel)}</text>`
+      <text x="${W - pad.r}" y="${(y(0) - 6).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="13">${esc(options.zeroLabel)}</text>`
     : "";
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(options.aria || "Gráfico")}">${grids}${zero}${lines}${marker}${labels}</svg></div>`;
 }
 
 function stackedColumns(labels, series) {
   const W = 360;
-  const H = 220;
-  const pad = { l: 28, r: 8, t: 18, b: 36 };
+  const H = 250;
+  const pad = { l: 8, r: 8, t: 28, b: 46 };
   const iw = W - pad.l - pad.r;
   const ih = H - pad.t - pad.b;
   const totals = labels.map((_, index) => series.reduce((sum, item) => sum + item.values[index], 0));
@@ -686,9 +692,10 @@ function stackedColumns(labels, series) {
       acc += value;
       shapes += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, h - 1).toFixed(1)}" fill="${SPORT_COLOR[item.name] || "var(--accent)"}"/>`;
     });
+    shapes += `<text x="${(x + bw / 2).toFixed(1)}" y="${(pad.t + ih - (acc / yMax) * ih - 8).toFixed(1)}" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">${esc(Number(totals[index]).toLocaleString("es-ES", { maximumFractionDigits: 2 }))}</text>`;
     const lines = label.includes(" (") ? [label.slice(0, label.indexOf(" (")), label.slice(label.indexOf(" (") + 1)] : [label];
     lines.forEach((line, lineIndex) => {
-      shapes += `<text x="${(pad.l + slot * index + slot / 2).toFixed(1)}" y="${(H - 20 + lineIndex * 12).toFixed(1)}" text-anchor="middle" fill="var(--faint)" font-size="10">${esc(line)}</text>`;
+      shapes += `<text x="${(pad.l + slot * index + slot / 2).toFixed(1)}" y="${(H - 28 + lineIndex * 16).toFixed(1)}" text-anchor="middle" fill="var(--muted)" font-size="13">${esc(line)}</text>`;
     });
   });
   const legend = `<div class="chart-legend">${series.map((item) => `<span><i style="background:${SPORT_COLOR[item.name]}"></i>${esc(item.name)}</span>`).join("")}</div>`;
@@ -774,7 +781,7 @@ function renderNutricion() {
 function renderNotas() {
   const { phase, week, risks, nextSteps, zonas } = state.data;
   const pct = phase.daysTotal ? Math.round((phase.dayNumber / phase.daysTotal) * 100) : 0;
-  const zoneRows = zonas.tabla.map((row) => `<tr><td>${esc(row.zona)}</td><td>${esc(row.fc)}</td></tr>`).join("");
+    const zoneRows = zonas.tabla.map((row) => `<div class="zone"><b>${esc(row.zona)}</b><span>${esc(row.fc)}</span></div>`).join("");
   const riskList = risks.map((risk) => {
     const tone = risk.tone === "danger" ? "danger" : risk.tone === "warning" ? "warn" : "";
     const badge = risk.badge ? `<span class="badge ${tone}">${esc(risk.badge)}</span>` : "";
@@ -791,7 +798,7 @@ function renderNotas() {
     <div class="section"><h2>Zonas de frecuencia</h2></div>
     <section class="card">
       <p class="quiet">${esc(zonas.nota)}</p>
-      <table class="zones"><thead><tr><th>Zona</th><th>FC</th></tr></thead><tbody>${zoneRows}</tbody></table>
+      <div class="zones">${zoneRows}</div>
     </section>
     <div class="section"><h2>Puntos de atención</h2></div>
     <ul class="list">${riskList}</ul>
