@@ -153,6 +153,11 @@ function markerIndex(data) {
   return index >= 0 ? index : data.load.hoyIndex;
 }
 
+function minutosHechos(session) {
+  const real = session.realizado && session.realizado.duracionMin;
+  return typeof real === "number" ? real : (session.duracionMin || 0);
+}
+
 function weekProgress() {
   const tally = { minutosPlan: 0, minutosHechos: 0, sesionesPlan: 0, sesionesHechas: 0 };
   state.data.days.forEach((day) => {
@@ -162,11 +167,28 @@ function weekProgress() {
       tally.minutosPlan += session.duracionMin || 0;
       if (session.completado) {
         tally.sesionesHechas += 1;
-        tally.minutosHechos += session.duracionMin || 0;
+        tally.minutosHechos += minutosHechos(session);
       }
     });
   });
   return tally;
+}
+
+function realizadoVsPlan(session) {
+  const real = session.realizado;
+  if (!real) return "";
+  const hecho = [
+    real.duracion,
+    real.distancia,
+    real.largos != null ? `~${real.largos} largos` : "",
+    real.ritmo ? `ritmo ${real.ritmo}` : "",
+    real.fcMedia ? `FC media ${real.fcMedia}` : "",
+    real.fcMax ? `FC máx ${real.fcMax}` : "",
+    real.kcal ? `${real.kcal} kcal` : "",
+    real.fuente || "",
+  ].filter(Boolean).join(" · ");
+  const plan = [session.duracion, session.metros ? `${num(session.metros)} m` : ""].filter(Boolean).join(" · ");
+  return `<p class="total">Realizado ${esc(hecho)}</p><p class="objetivo">Planificado ${esc(plan)}</p>`;
 }
 
 function sessionTotal(session) {
@@ -347,7 +369,9 @@ function renderInicio() {
         <span class="tag${session.completado ? " done" : ""}">${session.completado ? "COMPLETADO" : esc(session.tag)}</span>
       </div>
       <h3>${esc(session.title)}</h3>
-      <p class="total">${esc(session.duracion || sessionTotal(session))}${session.objetivo ? ` · ${esc(session.objetivo)}` : ""}</p>
+      ${session.realizado
+        ? realizadoVsPlan(session)
+        : `<p class="total">${esc(session.duracion || sessionTotal(session))}${session.objetivo ? ` · ${esc(session.objetivo)}` : ""}</p>`}
       <p class="summary">${esc(blockSummary(session))}</p>
     </button>`).join("");
   const menu = menuOf(today);
@@ -496,7 +520,7 @@ function sessionHtml(session, dayKit) {
       <span class="tag${session.completado ? " done" : ""}">${esc(session.tag)}</span>
     </div>
     <h3>${esc(session.title)}</h3>
-    <p class="total">${esc(sessionTotal(session))}</p>
+    ${session.realizado ? realizadoVsPlan(session) : `<p class="total">${esc(sessionTotal(session))}</p>`}
     ${session.objetivo ? `<p class="objetivo">${esc(session.objetivo)}</p>` : ""}
     ${pool}
     ${note}
@@ -702,14 +726,24 @@ function stackedColumns(labels, series) {
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Horas por semana y deporte">${shapes}</svg></div>${legend}`;
 }
 
+function versusLabel(row) {
+  if (!row.hechoDisplay) return row.display;
+  return `${row.hechoDisplay} de ${row.display}`;
+}
+
 function disciplineBars(rows) {
-  const max = Math.max(...rows.map((row) => row.hours), 0.01);
-  return rows.map((row) => `<div class="hbar"><div class="hbar-top"><span class="sport-line"><i class="dot ${esc(row.label === "Natación" ? "natacion" : row.label.toLowerCase())}"></i>${esc(row.label)}</span><strong>${esc(row.display)}</strong></div><div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(2, Math.round((row.hours / max) * 100))}%;background:${SPORT_COLOR[row.label] || "var(--accent)"}"></div></div></div>`).join("");
+  return rows.map((row) => {
+    const planMin = Math.max(1, Math.round((row.hours || 0) * 60));
+    const doneMin = row.hechoMin || 0;
+    const width = Math.max(doneMin ? 2 : 0, Math.min(100, Math.round((doneMin / planMin) * 100)));
+    const sport = row.label === "Natación" ? "natacion" : row.label.toLowerCase();
+    return `<div class="hbar"><div class="hbar-top"><span class="sport-line"><i class="dot ${esc(sport)}"></i>${esc(row.label)}</span><strong>${esc(versusLabel(row))}</strong></div><div class="hbar-track"><div class="hbar-fill" style="width:${width}%;background:${SPORT_COLOR[row.label] || "var(--accent)"}"></div></div></div>`;
+  }).join("");
 }
 
 function dayColumns(rows) {
   const max = Math.max(...rows.map((row) => row.hours), 0.01);
-  return `<div class="cols">${rows.map((row) => `<div class="col"><span class="col-val">${esc(row.display)}</span><div class="col-track"><div class="col-fill" style="--h:${row.hours ? Math.max(4, Math.round((row.hours / max) * 100)) : 0}%"></div></div><span class="col-lab">${esc(row.label)}</span></div>`).join("")}</div>`;
+  return `<div class="cols">${rows.map((row) => `<div class="col"><span class="col-val">${esc(versusLabel(row))}</span><div class="col-track"><div class="col-fill" style="--h:${row.hours ? Math.max(4, Math.round((row.hours / max) * 100)) : 0}%"></div></div><span class="col-lab">${esc(row.label)}</span></div>`).join("")}</div>`;
 }
 
 function renderProgreso() {

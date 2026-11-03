@@ -91,7 +91,7 @@
     ]
   },
   "load": {
-    "caption": "Estimación mía con la FC de las actividades que me has pasado; del 3 al 8 nov es el plan. Sube cuando me pases más historial.",
+    "caption": "Estimación mía con la FC de las actividades que me has pasado; del 4 al 8 nov sigue el plan. El 3 nov la natación real (~19 min a 123 ppm; FC reposo 55, FC máx 190) suma una carga estimada de ~15: la serie no trae la fórmula, así que ese valor es una estimación y a partir de ese día se arrastra con el mismo suavizado.",
     "formNote": "La forma negativa significa que estás construyendo (ganando forma); por debajo de -30 de forma mantenida, toca descargar.",
     "hoyIndex": 15,
     "hoyLabel": "hoy",
@@ -221,46 +221,51 @@
       {
         "date": "2026-11-03",
         "label": "",
-        "ctl": 12.6,
-        "atl": 46.8,
-        "tsb": -34.2
+        "ctl": 12.9,
+        "atl": 48.9,
+        "tsb": -36.0
       },
       {
         "date": "2026-11-04",
         "label": "",
-        "ctl": 13.5,
-        "atl": 47.2,
-        "tsb": -33.7
+        "ctl": 13.8,
+        "atl": 49.0,
+        "tsb": -35.3
       },
       {
         "date": "2026-11-05",
         "label": "",
-        "ctl": 14.3,
-        "atl": 47.2,
-        "tsb": -33
+        "ctl": 14.6,
+        "atl": 48.8,
+        "tsb": -34.2
       },
       {
         "date": "2026-11-06",
         "label": "",
-        "ctl": 14,
-        "atl": 41.1,
-        "tsb": -27
+        "ctl": 14.3,
+        "atl": 42.4,
+        "tsb": -28.1
       },
       {
         "date": "2026-11-07",
         "label": "",
-        "ctl": 17.1,
-        "atl": 55.4,
-        "tsb": -38.4
+        "ctl": 17.4,
+        "atl": 56.6,
+        "tsb": -39.2
       },
       {
         "date": "2026-11-08",
         "label": "8 nov",
-        "ctl": 18.4,
-        "atl": 57.8,
-        "tsb": -39.4
+        "ctl": 18.7,
+        "atl": 58.8,
+        "tsb": -40.1
       }
-    ]
+    ],
+    "cargaNatacion3Nov": {
+      "valor": 15,
+      "etiqueta": "estimación",
+      "nota": "No está guardada la fórmula TRIMP. Con FC reposo 55, FC máx 190 y ~19 min a 123 ppm el orden es ~15, y así se ha sumado al 3 nov."
+    }
   },
   "goals": [
     {
@@ -297,17 +302,17 @@
     },
     {
       "name": "Natación esta semana",
-      "now": 0,
+      "now": 725,
       "target": 3380,
-      "nowLabel": "0 m",
+      "nowLabel": "725 m",
       "targetLabel": "3.380 m plan",
       "color": 2
     },
     {
       "name": "Horas esta semana",
-      "now": 120,
+      "now": 139,
       "target": 430,
-      "nowLabel": "2:00 h",
+      "nowLabel": "2:19 h",
       "targetLabel": "7:10 h plan",
       "color": 3
     }
@@ -365,22 +370,30 @@
       {
         "label": "Bici",
         "hours": 3.17,
-        "display": "3:10"
+        "display": "3:10",
+        "hechoMin": 85,
+        "hechoDisplay": "1:25"
       },
       {
         "label": "Natación",
         "hours": 1.5,
-        "display": "1:30"
+        "display": "1:30",
+        "hechoMin": 19,
+        "hechoDisplay": "0:19"
       },
       {
         "label": "Fuerza",
         "hours": 1.33,
-        "display": "1:20"
+        "display": "1:20",
+        "hechoMin": 35,
+        "hechoDisplay": "0:35"
       },
       {
         "label": "Carrera",
         "hours": 1.17,
-        "display": "1:10"
+        "display": "1:10",
+        "hechoMin": 0,
+        "hechoDisplay": "0:00"
       }
     ],
     "byDay": [
@@ -388,13 +401,17 @@
         "id": "lun",
         "label": "L",
         "hours": 1.42,
-        "display": "1:25"
+        "display": "1:25",
+        "hechoMin": 85,
+        "hechoDisplay": "1:25"
       },
       {
         "id": "mar",
         "label": "M",
         "hours": 1.08,
-        "display": "1:05"
+        "display": "1:05",
+        "hechoMin": 54,
+        "hechoDisplay": "0:54"
       },
       {
         "id": "mie",
@@ -925,10 +942,10 @@
         {
           "id": "mar-natacion",
           "deporte": "natacion",
-          "tag": "Opcional",
-          "title": "Natación técnica",
-          "hora": "17:00",
-          "completado": false,
+          "tag": "Completado",
+          "title": "Natación de tarde",
+          "hora": "15:52",
+          "completado": true,
           "opcional": true,
           "cuentaEnPlan": true,
           "duracionMin": 30,
@@ -937,7 +954,7 @@
           "metros": 1020,
           "largos": 51,
           "objetivo": "Z2",
-          "nota": null,
+          "nota": "Intensidad correcta (Z1–Z2). Próximas sesiones: alargar hasta ~1.000 m manteniendo pausas para técnica.",
           "llevar": [
             "bañador",
             "gafas",
@@ -1013,7 +1030,21 @@
               "descripcion": "Suave."
             }
           ],
-          "ejercicios": []
+          "ejercicios": [],
+          "realizado": {
+            "titulo": "Natación de tarde",
+            "hora": "15:52",
+            "metros": 725,
+            "distancia": "725 m",
+            "largos": 36,
+            "duracion": "19:26",
+            "duracionMin": 19,
+            "ritmo": "2:40/100 m",
+            "fcMedia": "123 ppm",
+            "fcMax": "151 ppm",
+            "kcal": 187,
+            "fuente": "Strava · Apple Watch"
+          }
         }
       ],
       "date": "2026-11-03"
@@ -1161,16 +1192,16 @@
               "descripcion": "Bici estática + movilidad."
             },
             {
-          "nombre": "Vuelta a la calma",
-          "duracion": "3'",
-          "duracionMin": 3,
-          "distancia": null,
-          "metros": null,
-          "largos": null,
-          "descanso": null,
-          "intensidad": null,
-          "descripcion": "Estiramientos.",
-          "fase": "despues"
+              "nombre": "Vuelta a la calma",
+              "duracion": "3'",
+              "duracionMin": 3,
+              "distancia": null,
+              "metros": null,
+              "largos": null,
+              "descanso": null,
+              "intensidad": null,
+              "descripcion": "Estiramientos.",
+              "fase": "despues"
             }
           ],
           "ejercicios": [
@@ -1681,9 +1712,9 @@
     },
     {
       "date": "2026-11-03",
-      "start": 17,
-      "end": 17.75,
-      "title": "Natación técnica"
+      "start": 15.866666666666667,
+      "end": 16.190555555555555,
+      "title": "Natación de tarde (hecho)"
     },
     {
       "date": "2026-11-03",

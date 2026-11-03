@@ -97,14 +97,22 @@ if (!tech || tech.descanso !== '20"' || !String(tech.descripcion).includes("braz
   fail("falta la técnica del martes");
 }
 if (swim.metros !== 1020 || swim.bloques.find((block) => block.nombre === "Principal").metros !== 400) {
-  fail("metros del martes");
+  fail("el plan del martes debe seguir en 1.020 m");
+}
+if (!swim.completado || swim.realizado?.metros !== 725 || swim.realizado?.duracionMin !== 19) {
+  fail("la natación del martes no está cerrada con 725 m y 19 min");
 }
 const plan = data.days.flatMap((day) => day.sessions).filter((session) => session.cuentaEnPlan);
 const planMin = plan.reduce((total, session) => total + (session.duracionMin || 0), 0);
-const doneMin = plan.filter((session) => session.completado).reduce((total, session) => total + (session.duracionMin || 0), 0);
-if (planMin !== 430 || doneMin !== 120) fail(`minutos plan ${planMin} hechos ${doneMin}`);
-if (data.goals.find((goal) => goal.name === "Natación esta semana").target !== 3380) fail("objetivo de natación");
-if (data.goals.find((goal) => goal.name === "Horas esta semana").target !== 430) fail("objetivo de horas");
+const doneMin = plan.filter((session) => session.completado).reduce((total, session) => {
+  const real = session.realizado?.duracionMin;
+  return total + (typeof real === "number" ? real : (session.duracionMin || 0));
+}, 0);
+if (planMin !== 430 || doneMin !== 139) fail(`minutos plan ${planMin} hechos ${doneMin}`);
+const swimGoal = data.goals.find((goal) => goal.name === "Natación esta semana");
+if (swimGoal.target !== 3380 || swimGoal.now !== 725) fail("objetivo de natación");
+const hourGoal = data.goals.find((goal) => goal.name === "Horas esta semana");
+if (hourGoal.target !== 430 || hourGoal.now !== 139) fail("objetivo de horas");
 
 if (data.week.start !== "2026-11-02" || data.week.end !== "2026-11-08") fail("rango de la semana");
 if (data.phase.start !== "2026-11-02" || data.phase.end !== "2027-01-10") fail("rango de la fase");
