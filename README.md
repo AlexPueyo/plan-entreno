@@ -1,8 +1,28 @@
 # Plan de Alex
 
-Panel personal de entrenamiento y nutrición, en español, instalable en el móvil (PWA). Se publica con GitHub Pages en `https://alexpueyo.github.io/plan-entreno/`.
+Panel personal de entrenamiento y nutrición, en español, instalable en el móvil (PWA).
+
+Publicada en https://alexpueyo.github.io/plan-entreno/
 
 La interfaz está en `index.html`, `styles.css` y `app.js`. **No calcula el plan:** solo lee un JSON. Para cambiar la semana no hace falta tocar la interfaz.
+
+## Instalar en el teléfono
+
+Abre https://alexpueyo.github.io/plan-entreno/ en el navegador del móvil y añádela a la pantalla de inicio. Después se abre a pantalla completa y, tras la primera visita con red, sigue disponible sin conexión.
+
+**iPhone (Safari)**
+
+1. Abre el enlace en Safari (no desde dentro de otra app).
+2. Pulsa el botón Compartir.
+3. Elige **Añadir a pantalla de inicio**.
+4. Confirma con **Añadir**. El icono queda junto al resto de apps.
+
+**Android (Chrome)**
+
+1. Abre el enlace en Chrome.
+2. Pulsa el menú de tres puntos.
+3. Elige **Instalar app** o **Añadir a pantalla de inicio**.
+4. Confirma con **Instalar**. Si Chrome no ofrece instalarla, usa **Añadir a pantalla de inicio**.
 
 ## Actualizar la semana
 
@@ -213,6 +233,6 @@ Abre `http://127.0.0.1:8765/`.
 
 ## GitHub Pages
 
-El workflow `.github/workflows/pages.yml` despliega con `actions/deploy-pages` en cada push a `main`.
+El workflow `.github/workflows/pages.yml` despliega con `actions/deploy-pages` en cada push a `main` y también se puede lanzar a mano (`workflow_dispatch`).
 
 En el repositorio, una sola vez: **Settings → Pages → Build and deployment → Source: GitHub Actions**. Sin eso el workflow no tiene dónde publicar. El sitio queda en `https://alexpueyo.github.io/plan-entreno/`.
