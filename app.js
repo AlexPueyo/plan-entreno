@@ -72,11 +72,6 @@ function parseClock(value) {
   return h * 60 + m;
 }
 
-function nowMinutes() {
-  const date = new Date();
-  return date.getHours() * 60 + date.getMinutes();
-}
-
 function icon(name) {
   const attrs = 'viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
   const paths = {
@@ -174,37 +169,6 @@ function weekProgress() {
   return tally;
 }
 
-function sessionEnded(session, isToday) {
-  if (session.completado) return true;
-  if (!isToday) return false;
-  const start = parseClock(session.hora);
-  if (start == null || !session.duracionMin) return false;
-  return nowMinutes() > start + session.duracionMin;
-}
-
-function nextSession(today) {
-  const start = state.data.days.findIndex((day) => day.id === today.id);
-  const now = nowMinutes();
-  for (let index = Math.max(0, start); index < state.data.days.length; index += 1) {
-    const day = state.data.days[index];
-    for (const session of day.sessions) {
-      if (!session.cuentaEnPlan || session.completado) continue;
-      if (index === start && sessionEnded(session, true) && now > (parseClock(session.hora) || 0)) continue;
-      return { day, session };
-    }
-  }
-  return null;
-}
-
-function nextSupplement(menu) {
-  const now = nowMinutes();
-  const meals = menu.meals.filter((meal) => meal.supp && meal.supp !== "—");
-  return meals.find((meal) => {
-    const time = parseClock(meal.time);
-    return time != null && time >= now;
-  }) || null;
-}
-
 function sessionTotal(session) {
   const bits = [];
   if (session.duracion) bits.push(session.duracion);
@@ -241,63 +205,237 @@ function ring(percent) {
   </svg>`;
 }
 
-function compactSession(day, session, link) {
-  const attrs = link ? `data-day="${esc(day.id)}" data-goto="hoy"` : "";
-  return `<button type="button" class="card session-link" ${attrs}>
-    <div class="session-top">
-      <span class="sport-line"><i class="dot ${esc(session.deporte)}"></i>${esc(session.title)}</span>
-      <span class="tag${session.completado ? " done" : ""}">${esc(session.tag)}</span>
-    </div>
-    <p class="total">${esc(sessionTotal(session))}</p>
-    <p class="objetivo">${esc([session.objetivo, session.hora].filter(Boolean).join(" · "))}</p>
-  </button>`;
+function dec(value) {
+  return Number(value).toLocaleString("es-ES", { maximumFractionDigits: 1 });
+}
+
+function parseLoose(text) {
+  return [...String(text).matchAll(/\d{1,3}(?:\.\d{3})+|\d+(?:,\d+)?/g)].map((match) =>
+    Number(match[0].replace(/\./g, "").replace(",", "."))
+  );
+}
+
+function phaseHeading(phase) {
+  const match = String(phase.name).match(/^(Fase\s+\d+)\s+(.+)$/i);
+  if (!match) return phase.name;
+  const rest = match[2].charAt(0).toUpperCase() + match[2].slice(1);
+  return `${match[1]} · ${rest}`;
+}
+
+function phaseDayNumber(dateIso) {
+  const start = new Date(`${state.data.phase.start}T12:00:00`);
+  const date = new Date(`${dateIso}T12:00:00`);
+  const day = Math.round((date - start) / 86400000) + 1;
+  return Math.min(state.data.phase.daysTotal, Math.max(1, day));
+}
+
+function formatHour(value) {
+  const hours = Math.floor(value);
+  const mins = Math.round((value - hours) * 60) % 60;
+  return `${hours}:${String(mins).padStart(2, "0")}`;
+}
+
+function shortSpan(start, end) {
+  const part = (value) => (Number.isInteger(value) ? String(value) : formatHour(value));
+  return `${part(start)}–${part(end)}`;
+}
+
+function loadIndex(dateIso) {
+  const index = state.data.load.points.findIndex((point) => point.date === dateIso);
+  return index >= 0 ? index : state.data.load.hoyIndex;
+}
+
+function trendOf(points, key, index) {
+  if (index <= 0) return "flat";
+  const delta = points[index][key] - points[index - 1][key];
+  if (delta > 0.05) return "up";
+  if (delta < -0.05) return "down";
+  return "flat";
+}
+
+function spark(points, key, index) {
+  const w = 84;
+  const h = 28;
+  const pad = 3;
+  const vals = points.map((point) => point[key]);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const span = max - min || 1;
+  const x = (i) => pad + (i / (vals.length - 1)) * (w - pad * 2);
+  const y = (v) => pad + (1 - (v - min) / span) * (h - pad * 2);
+  const d = vals.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${x(index).toFixed(1)}" cy="${y(vals[index]).toFixed(1)}" r="2.2" fill="currentColor"/></svg>`;
+}
+
+function blockSummary(session) {
+  return (session.bloques || []).map((block) => {
+    const qty = block.duracion || block.distancia || "";
+    if (block.intensidad?.zona) return `${qty} ${block.intensidad.zona}`.trim();
+    if (/calma/i.test(block.nombre)) return `${qty} calma`.trim();
+    const short = String(block.nombre || "").toLowerCase();
+    if (!qty) return short;
+    if (/calentamiento/i.test(block.nombre)) return qty;
+    return `${qty} ${short}`.trim();
+  }).filter(Boolean).join(" · ");
+}
+
+function dayEvents(day) {
+  return state.data.events.filter((event) => event.date === day.date);
+}
+
+function agendaItems(day) {
+  const items = dayEvents(day).map((event) => ({
+    sort: event.start,
+    kind: event.free ? "trabajo" : event.flag ? "clase" : "entreno",
+    time: `${formatHour(event.start)}–${formatHour(event.end)}`,
+    title: event.title,
+  }));
+  let last = 7;
+  menuOf(day).meals.forEach((meal) => {
+    const mins = parseClock(meal.time);
+    const hour = mins == null ? last + 0.35 : mins / 60;
+    if (mins != null) last = mins / 60;
+    items.push({ sort: hour, kind: "comida", time: meal.time, title: meal.name });
+  });
+  return items.sort((a, b) => a.sort - b.sort);
+}
+
+function dayMark(day) {
+  const training = day.sessions.filter((session) => session.cuentaEnPlan);
+  if (!training.length) return "rest";
+  const done = training.filter((session) => session.completado).length;
+  if (done === 0) return "planned";
+  if (done === training.length) return "done";
+  return "partial";
+}
+
+function targetBar(value, min, max) {
+  const cap = max || min || 1;
+  const width = Math.max(0, Math.min(100, Math.round((value / cap) * 100)));
+  return width;
 }
 
 function renderInicio() {
   const today = realToday();
-  const outside = today.date !== localISO();
-  const progress = weekProgress();
-  const ratio = progress.minutosPlan ? progress.minutosHechos / progress.minutosPlan : 0;
-  const upcoming = nextSession(today);
+  const phase = state.data.phase;
+  const estado = state.data.athlete.metrics.find((item) => item.id === "estado");
+  const index = loadIndex(today.date);
+  const point = state.data.load.points[index];
+  const points = state.data.load.points;
+  const estimate = /estimaci[oó]n/i.test(state.data.load.caption || "");
+  const loads = [
+    { key: "ctl", label: "Condición física", short: "CTL", value: point.ctl },
+    { key: "atl", label: "Fatiga", short: "ATL", value: point.atl },
+    { key: "tsb", label: "Forma", short: "TSB", value: point.tsb },
+  ];
+  const bodyMetrics = ["peso", "vfc", "fc-reposo"]
+    .map((id) => state.data.athlete.metrics.find((item) => item.id === id))
+    .filter(Boolean);
+  const events = dayEvents(today);
+  const work = events.filter((event) => event.free);
+  const classes = events.filter((event) => event.flag);
+  const rest = dayMark(today) === "rest";
+  const chips = [
+    ...work.map((event) => `Trabajo ${shortSpan(event.start, event.end)}`),
+    ...(classes.length ? classes.map((event) => `Clase ${shortSpan(event.start, event.end)}`) : ["Sin clase"]),
+    ...(rest ? ["Descanso"] : []),
+  ];
+  const agenda = agendaItems(today).map((item) => `<li class="ag ${item.kind}"><span>${esc(item.time)}</span><span>${esc(item.title)}</span></li>`).join("");
+  const sessions = today.sessions.map((session) => `<button type="button" class="card" data-day="${esc(today.id)}" data-goto="hoy">
+      <div class="session-top">
+        <span class="sport-line"><i class="dot ${esc(session.deporte)}"></i>${esc(SPORT_LABEL[session.deporte] || session.title)}</span>
+        <span class="tag${session.completado ? " done" : ""}">${session.completado ? "COMPLETADO" : esc(session.tag)}</span>
+      </div>
+      <h3>${esc(session.title)}</h3>
+      <p class="total">${esc(session.duracion || sessionTotal(session))}${session.objetivo ? ` · ${esc(session.objetivo)}` : ""}</p>
+      <p class="summary">${esc(blockSummary(session))}</p>
+    </button>`).join("");
   const menu = menuOf(today);
   const total = totals(menu.meals);
-  const supplement = nextSupplement(menu);
-  const protein = state.data.nutrition.targets.find((item) => item.label === "Proteína");
-  const energy = state.data.nutrition.targets.find((item) => item.label === "Energía");
-  const metrics = ["peso", "vfc", "fc-reposo"].map((id) => state.data.athlete.metrics.find((item) => item.id === id)).filter(Boolean);
-  const cards = today.sessions.map((session) => compactSession(today, session, true)).join("");
-  const next = upcoming
-    ? `<button type="button" class="card" data-day="${esc(upcoming.day.id)}" data-goto="hoy">
-        <p class="kicker">Siguiente</p>
-        <h2>${esc(upcoming.day.label)} · ${esc(upcoming.session.title)}</h2>
-        <p class="total">${esc(sessionTotal(upcoming.session))}</p>
-        <p class="objetivo">${esc([upcoming.session.objetivo, upcoming.session.hora].filter(Boolean).join(" · "))}</p>
-      </button>`
-    : `<section class="card"><p class="quiet">No queda otra sesión planificada esta semana.</p></section>`;
-  const supp = supplement
-    ? `<section class="card"><p class="kicker">Siguiente suplemento</p><h2>${esc(supplement.time)} · ${esc(supplement.name)}</h2><p class="objetivo">${esc(supplement.supp)}</p></section>`
-    : `<section class="card"><p class="kicker">Suplementos</p><p class="quiet">Ya has pasado los momentos de hoy.</p></section>`;
-  return `<p class="kicker">${outside ? "Lunes del plan" : "Hoy"} · ${esc(longDate(today.date))}</p>
-    <h2 id="panel-title">${esc(state.data.phase.name)}</h2>
-    <p class="quiet">Semana ${esc(state.data.phase.weekNumber)} de ${esc(state.data.phase.weeksTotal)} · día ${esc(state.data.phase.dayNumber)} de ${esc(state.data.phase.daysTotal)}</p>
-    <section class="card home-top">
-      ${ring(ratio)}
-      <div>
-        <div class="stat"><b>${clock(progress.minutosHechos)} de ${clock(progress.minutosPlan)} h</b><span>Horas hechas</span></div>
-        <div class="stat"><b>${progress.sesionesHechas} de ${progress.sesionesPlan}</b><span>Sesiones hechas</span></div>
+  const energyText = state.data.nutrition.targets.find((item) => item.label === "Energía")?.value || "";
+  const proteinText = state.data.nutrition.targets.find((item) => item.label === "Proteína")?.value || "";
+  const energyNums = parseLoose(energyText);
+  const proteinNums = parseLoose(proteinText);
+  const energyMax = today.id === "sab" && energyNums.length >= 3 ? energyNums[energyNums.length - 1] : energyNums[1] || energyNums[0] || 1;
+  const energyLabel = today.id === "sab" && energyNums.length >= 3
+    ? `${num(energyNums[energyNums.length - 1])} kcal`
+    : energyNums.length >= 2 ? `${num(energyNums[0])}–${num(energyNums[1])} kcal` : energyText;
+  const proteinMax = proteinNums[1] || proteinNums[0] || 1;
+  const proteinLabel = proteinNums.length >= 2 ? `${num(proteinNums[0])}–${num(proteinNums[1])} g` : proteinText;
+  const meals = menu.meals.map((meal) => `<li class="meal-row">
+      <span class="meal-time">${esc(meal.time)}</span>
+      <span>
+        <strong>${esc(meal.name)}</strong>
+        <span class="meal-food">${esc(meal.food)}</span>
+        <span class="macros">${num(meal.kcal)} kcal · ${num(meal.p)} P · ${num(meal.c)} C · ${num(meal.g)} G</span>
+        ${meal.supp && meal.supp !== "—" ? `<span class="pill">${esc(meal.supp)}</span>` : ""}
+      </span>
+    </li>`).join("");
+  const progress = weekProgress();
+  const letters = { lun: "L", mar: "M", mie: "X", jue: "J", vie: "V", sab: "S", dom: "D" };
+  const dots = state.data.days.map((day) => {
+    const mark = dayMark(day);
+    const current = day.id === today.id ? " is-today" : "";
+    return `<div class="daydot ${mark}${current}"><i></i><span>${letters[day.id] || ""}</span></div>`;
+  }).join("");
+  const arrows = { up: "↑", down: "↓", flat: "→" };
+
+  return `<header class="dash-head">
+      <p class="kicker">${esc(longDate(today.date))}</p>
+      <h2 id="panel-title">${esc(phaseHeading(phase))}</h2>
+      <p class="quiet">día ${phaseDayNumber(today.date)}/${esc(phase.daysTotal)}</p>
+      <p class="status">${esc(estado?.value || "")}</p>
+    </header>
+    <section class="card">
+      <div class="session-top">
+        <h2>Estado de forma</h2>
+        ${estimate ? '<span class="tag">estimación</span>' : ""}
+      </div>
+      <p class="state-label">${esc(estado?.value || "")}</p>
+      <p class="quiet">${esc(estado?.detail || "")}</p>
+      <div class="form-grid">
+        ${loads.map((item) => {
+          const dir = trendOf(points, item.key, index);
+          return `<div class="form-metric">
+            <span class="label">${esc(item.label)}</span>
+            <b>${dec(item.value)} <span class="trend ${dir}" aria-label="${dir}">${arrows[dir]}</span></b>
+            <span class="label">${esc(item.short)}</span>
+            ${spark(points, item.key, index)}
+          </div>`;
+        }).join("")}
+      </div>
+      <div class="form-grid measured">
+        ${bodyMetrics.map((item) => `<div class="form-metric"><span class="label">${esc(item.label)}</span><b>${esc(item.value)}</b></div>`).join("")}
       </div>
     </section>
-    <div class="section"><h2>Sesiones de hoy</h2></div>
-    <div class="stack">${cards}</div>
-    ${next}
+    <div class="section"><h2>Agenda de hoy</h2></div>
     <section class="card">
-      <p class="kicker">Comida de hoy</p>
-      <p class="kcal">${num(total.kcal)}<span>kcal en el menú · ${num(total.p)} g de proteína</span></p>
-      <p class="quiet">${esc(energy?.value || "")}. ${esc(protein?.value || "")}.</p>
+      <div class="badges">${chips.map((chip) => `<span class="chip">${esc(chip)}</span>`).join("")}</div>
+      <ol class="agenda-list">${agenda}</ol>
     </section>
-    ${supp}
-    <section class="card"><p class="kicker">Atención</p><h2>${esc(state.data.week.alerta)}</h2></section>
-    <div class="metrics">${metrics.map((metric) => `<div class="metric"><div class="value">${esc(metric.value)}</div><div class="label">${esc(metric.label)}</div></div>`).join("")}</div>`;
+    <div class="section"><h2>Sesiones de hoy</h2></div>
+    <div class="stack">${sessions}</div>
+    <div class="section"><h2>Comida de hoy</h2></div>
+    <section class="card">
+      <ol class="meal-list">${meals}</ol>
+      <div class="bar-block">
+        <div class="hbar-top"><span>Energía</span><strong>${num(total.kcal)} kcal</strong></div>
+        <div class="track"><div class="fill" style="width:${targetBar(total.kcal, energyNums[0], energyMax)}%"></div></div>
+        <p class="quiet">Objetivo ${esc(energyLabel)}</p>
+      </div>
+      <div class="bar-block">
+        <div class="hbar-top"><span>Proteína</span><strong>${num(total.p)} g</strong></div>
+        <div class="track"><div class="fill" style="width:${targetBar(total.p, proteinNums[0], proteinMax)}%"></div></div>
+        <p class="quiet">Objetivo ${esc(proteinLabel)}</p>
+      </div>
+    </section>
+    <div class="section"><h2>Semana</h2></div>
+    <section class="card">
+      <div class="dots">${dots}</div>
+      <p class="total">${clock(progress.minutosHechos)} de ${clock(progress.minutosPlan)} h</p>
+      <p class="quiet">${progress.sesionesHechas} de ${progress.sesionesPlan} sesiones</p>
+    </section>
+    <section class="card alert"><p>${esc(state.data.week.alerta)}</p></section>`;
 }
 
 function timeline(blocks) {

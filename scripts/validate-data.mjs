@@ -58,7 +58,9 @@ data.load.points.forEach((point, index) => {
 });
 
 if (data.goals.length !== 6) fail("hacen falta 6 objetivos");
-if (data.events.length !== 17) fail(`eventos: ${data.events.length}, se esperaban 17`);
+if (data.events.length !== 18) fail(`eventos: ${data.events.length}, se esperaban 18`);
+const tueWork = data.events.find((event) => event.date === "2026-11-03" && event.free && event.title === "Trabajo");
+if (!tueWork || tueWork.start !== 7 || tueWork.end !== 15) fail("el martes no tiene trabajo 7:00–15:00");
 if (data.nutrition.supplements.length !== 7) fail("suplementación incompleta");
 if (data.records.length !== 5) fail("marcas incompletas");
 if (data.risks.length !== 4) fail("riesgos incompletos");

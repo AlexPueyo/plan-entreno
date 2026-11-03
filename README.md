@@ -30,7 +30,7 @@ Los textos `Estimación` y `Pendiente` se dejan tal cual cuando el dato todavía
 | Zona de la app | Dónde está en el JSON |
 | --- | --- |
 | Cabecera (semana y fase) | `week.label`, `phase` |
-| Inicio: resumen, anillo, alerta | se calcula de `days[].sessions`, `menus`, `week.alerta`, `athlete.metrics` |
+| Inicio: el día de un vistazo | fecha real (o el lunes), `phase`, `athlete`, `load`, `events`, `days[]`, `menus`, `nutrition.targets`, `week.alerta` |
 | Hoy: bloques, ejercicios, comidas | `days[]`, `menus` |
 | Semana: calendario y tarjetas | `events`, `days[]`, `distribution.byDay` |
 | Progreso: atleta, CTL/ATL/TSB, objetivos, horas, marcas | `athlete`, `load`, `goals`, `weeklyHours`, `distribution`, `records` |
@@ -59,6 +59,8 @@ Paleta de los objetivos, en este orden (índice `goals[].color`):
 - `referenceToday`, `referenceNowHour`: día y hora (decimal, 14.2 = 14:12) del momento en que se armó el plan. La app dibuja la hora real del teléfono; estos dos campos conservan la referencia original.
 - `alerta`: frase corta de Inicio.
 - `piscinaM`: largo de la piscina en metros (20). Un largo = `piscinaM`.
+
+De lunes a viernes el calendario lleva trabajo de 7:00 a 15:00. Si un día laborable no lo traía, se añade ese bloque.
 
 ### `phase`
 

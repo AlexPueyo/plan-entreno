@@ -331,6 +331,59 @@ button.card, button.day-card { width: 100%; text-align: left; }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; color: var(--muted); font-size: 12px; }
 .chart svg { width: 100%; height: auto; display: block; }
 
+.dash-head { margin: 8px 0 18px; }
+.dash-head h2 { font-size: 22px; }
+.status { margin-top: 8px; font-size: 15px; font-weight: 650; }
+.state-label { margin-top: 8px; font-size: 28px; letter-spacing: -0.03em; font-weight: 650; line-height: 1.1; }
+.form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.form-grid.measured { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.form-metric { min-width: 0; }
+.form-metric > .label:first-child { min-height: 2.6em; line-height: 1.3; }
+.form-metric b { display: block; margin-top: 2px; font-size: 16px; letter-spacing: -0.03em; font-weight: 650; white-space: nowrap; }
+.form-metric .label { display: block; }
+.trend { font-size: 12px; color: var(--muted); font-weight: 600; }
+.spark { width: 100%; height: 28px; color: var(--muted); display: block; margin-top: 6px; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.agenda-list, .meal-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.ag, .meal-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+.ag span:first-child, .meal-row .meal-time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+.ag.entreno span:last-child { font-weight: 650; }
+.meal-row .meal-food, .meal-row .macros, .summary { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.pill {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+}
+.bar-block { margin-top: 14px; }
+.bar-block .quiet { margin-top: 6px; }
+.dots { display: flex; justify-content: space-between; gap: 4px; }
+.daydot { flex: 1; min-width: 0; text-align: center; color: var(--faint); font-size: 11px; font-weight: 650; }
+.daydot i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: 0 auto 6px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: transparent;
+}
+.daydot.done i { background: var(--accent); border-color: var(--accent); }
+.daydot.partial i { background: linear-gradient(90deg, var(--accent) 50%, transparent 50%); border-color: var(--accent); }
+.daydot.rest i { background: var(--line); }
+.daydot.is-today { color: var(--text); }
+.alert { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.alert p { font-weight: 650; }
 .home-top {
   display: grid;
   grid-template-columns: 84px 1fr;

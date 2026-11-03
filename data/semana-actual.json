@@ -823,7 +823,7 @@
     {
       "id": "mar",
       "label": "Mar 3",
-      "work": "Según tu día",
+      "work": "7:00–15:00",
       "classes": "20:00–22:00 Estadística Avanzada",
       "focus": "Fuerza + natación técnica",
       "menu": "c20",
@@ -1665,6 +1665,13 @@
       "end": 20,
       "title": "Economía / Finanzas",
       "flag": true
+    },
+    {
+      "date": "2026-11-03",
+      "start": 7,
+      "end": 15,
+      "title": "Trabajo",
+      "free": true
     },
     {
       "date": "2026-11-03",
